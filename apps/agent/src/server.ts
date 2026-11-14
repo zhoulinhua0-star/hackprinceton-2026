@@ -37,7 +37,7 @@ const store = storeMode === "dynamo"
   : new FileStore(new URL("../../../.data/state.json", import.meta.url).pathname);
 if (store instanceof DynamoStore) log(`state: DynamoDB table ${tableName()} (${(await store.ids()).length} student(s) loaded)`);
 const photon = makePhoton(apiKey);
-const messenger = new PhotonMessenger(photon, projectId, store);
+const messenger = new PhotonMessenger(photon, projectId, store, apiKey);
 const llm = process.env.USE_FAKE_LLM === "true"
   ? new FakeLLM()
   : new BedrockLLM({ region: env("AWS_REGION"), defaultModel: env("BEDROCK_MODEL_DEFAULT"), strongModel: env("BEDROCK_MODEL_STRONG", process.env.BEDROCK_MODEL_DEFAULT) });
@@ -62,7 +62,7 @@ const crew = new Crew({ caller,
   store, messenger, llm, calendar, clock: { now: () => new Date() }, tz,
   // Demo mode bypasses quiet hours and caps for the demo student only, never for strangers who scan the QR.
   // STAGED_PHOTO=false makes "read texted photos for real" the default; the /demo switch changes it while running.
-  opts: { bypassLimits: demoMode ? [defaultStudent] : false, dashboardUrl: env("DASHBOARD_URL", "http://localhost:3000"), stagedPhoto: process.env.STAGED_PHOTO !== "false", voiceNumber },
+  opts: { bypassLimits: demoMode ? [defaultStudent] : false, dashboardUrl: env("DASHBOARD_URL", "http://localhost:3000"), stagedPhoto: process.env.STAGED_PHOTO !== "false", voiceNumber, lineNumber: process.env.PHOTON_IMESSAGE_LINE || undefined },
 });
 
 const stop = listen({ photon, projectId, apiKey, log, onMessage: (m) => crew.onInbound(m.studentId, {

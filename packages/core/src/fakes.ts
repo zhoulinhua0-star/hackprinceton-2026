@@ -1,10 +1,12 @@
-import type { CalendarWriter, Caller, CallStatus, Clock, LLM, LlmTask, Messenger, Store } from "./interfaces.ts";
+import type { CalendarWriter, Caller, CallStatus, Clock, LLM, LlmTask, Messenger, OutFile, Store } from "./interfaces.ts";
 import type { StudentState } from "./types.ts";
 
 export class FakeMessenger implements Messenger {
   sent: { studentId: string; text: string }[] = [];
   constructor(private onSend?: (studentId: string, text: string) => void) {}
+  files: { studentId: string; file: OutFile }[] = [];
   async send(studentId: string, text: string) { this.sent.push({ studentId, text }); this.onSend?.(studentId, text); }
+  async sendFile(studentId: string, file: OutFile) { this.files.push({ studentId, file }); }
   texts() { return this.sent.map((s) => s.text); }
 }
 

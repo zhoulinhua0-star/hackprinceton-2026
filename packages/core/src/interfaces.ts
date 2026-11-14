@@ -1,6 +1,11 @@
 import type { StudentState } from "./types.ts";
 
-export interface Messenger { send(studentId: string, text: string): Promise<void> }
+export interface OutFile { bytes: Uint8Array; contentType: string; filename: string }
+export interface Messenger {
+  send(studentId: string, text: string): Promise<void>;
+  /** Sends a file into the thread (the contact card). Optional: a messenger without it just skips files. */
+  sendFile?(studentId: string, file: OutFile): Promise<void>;
+}
 export interface Clock { now(): Date }
 export interface Store {
   ids(): Promise<string[]>;

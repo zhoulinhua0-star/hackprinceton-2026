@@ -117,3 +117,80 @@ test("the vibe changes the wording of a miss, and of a nudge, but always keeps Y
   assert.equal(nudgeText(c, "Ch. 5: Interest rates", "chill"), nudgeText(c, "Ch. 5: Interest rates"));
   assert.notEqual(nudgeText(c, "Ch. 5: Interest rates", "strict"), nudgeText(c, "Ch. 5: Interest rates", "hype"));
 });
+
+// ---------- contact card (DECISIONS #105) ----------
+class CardOut implements Messenger {
+  sent: string[] = []; files: { filename: string; contentType: string; text: string }[] = []; failFiles = false;
+  async send(_id: string, text: string) { this.sent.push(text); }
+  async sendFile(_id: string, f: { bytes: Uint8Array; contentType: string; filename: string }) {
+    if (this.failFiles) throw new Error("upload failed");
+    this.files.push({ filename: f.filename, contentType: f.contentType, text: new TextDecoder().decode(f.bytes) });
+  }
+}
+function cardSetup(lineNumber: string | undefined = "+15555550199") {
+  const msg = new CardOut(), store = new MemoryStore();
+  const crew = new Crew({ store, messenger: msg, llm: new FakeLLM(), calendar: new FakeCalendar(), clock: new FixedClock(new Date("2026-11-15T12:00:00-05:00")), tz: "America/New_York", opts: { proposalDelayMs: 0, nextQuestionDelayMs: 0, bypassLimits: true, lineNumber } });
+  return { crew, msg, store, say: (text: string) => crew.onInbound(ME, { text }) };
+}
+
+test("brand-new student: after the vibe, the agent texts its card with the chosen name and face, then asks the last question", async () => {
+  const s = cardSetup();
+  await s.say("Hi Syllabus Crew"); await s.say("Juno"); await s.say("hype");
+  assert.equal(s.msg.files.length, 1);
+  const f = s.msg.files[0]!;
+  assert.equal(f.filename, "Juno.vcf");
+  assert.equal(f.contentType, "text/vcard");
+  assert.match(f.text, /FN:Juno\r\n/);
+  assert.match(f.text, /TEL;TYPE=CELL:\+15555550199/);
+  assert.match(f.text, /PHOTO;ENCODING=b;TYPE=PNG:iVBORw0KGgo/); // a real PNG (the hype avatar)
+  assert.deepEqual(s.msg.sent.slice(-2), [
+    "Hype it is. Let's go!",
+    "That's my card. Tap it, then Create New Contact, and my texts will show up as Juno with my face.\n\nLast one: which class worries you most this semester?",
+  ]);
+  const st = (await s.store.load(ME))!;
+  assert.equal(st.cardFor, "Juno|hype");
+  assert.equal(st.pendingName?.step, "focus");
+  await s.say("Macro");
+  assert.equal(s.msg.sent.at(-1), "Noted. Text me that syllabus as a PDF and I'll take it from there.");
+});
+
+test("a failed card never breaks onboarding: no mention of it, the last question still comes", async () => {
+  const s = cardSetup();
+  s.msg.failFiles = true;
+  await s.say("Hi"); await s.say("skip"); await s.say("chill");
+  assert.deepEqual(s.msg.sent.slice(-2), ["Chill it is. No pressure, just steady.", "Last one: which class worries you most this semester?"]);
+  assert.equal((await s.store.load(ME))!.cardFor, undefined);
+});
+
+test("no line number configured: no card, the original single text", async () => {
+  const s = cardSetup(""); // PHOTON_IMESSAGE_LINE unset
+  await s.say("Hi"); await s.say("Juno"); await s.say("strict");
+  assert.equal(s.msg.files.length, 0);
+  assert.equal(s.msg.sent.at(-1), "Strict it is. I'll hold you to it. Last one: which class worries you most this semester?");
+});
+
+test("rename or vibe change after the card: a fresh card; the same name again sends nothing", async () => {
+  const s = cardSetup();
+  await s.say("Hi"); await s.say("Juno"); await s.say("chill"); await s.say("skip");
+  await s.say("call yourself Max");
+  assert.equal(s.msg.files.length, 2);
+  assert.match(s.msg.files[1]!.text, /FN:Max\r\n/);
+  assert.equal(s.msg.sent.at(-1), "Here's my updated card. Tap it to save the new one.");
+  await s.say("be strict");
+  assert.equal(s.msg.files.length, 3);
+  assert.equal((await s.store.load(ME))!.cardFor, "Max|strict");
+});
+
+test("Reset makes the demo student brand new again: the next text starts over and a new card comes", async () => {
+  const s = cardSetup();
+  await s.crew.onInbound(ME, { text: "Hi", route: { spaceId: "sp", senderId: "ag" } });
+  await s.say("Juno"); await s.say("chill"); await s.say("skip");
+  await s.crew.resetDemo(ME);
+  const st = (await s.store.load(ME))!;
+  assert.equal(st.agentName, undefined); assert.equal(st.cardFor, undefined); assert.ok(st.route);
+  await s.say("Hi Syllabus Crew");
+  assert.match(s.msg.sent.at(-1)!, /what do you want to call me/i);
+  await s.say("Nova"); await s.say("hype");
+  assert.equal(s.msg.files.length, 2);
+  assert.match(s.msg.files[1]!.text, /FN:Nova\r\n/);
+});

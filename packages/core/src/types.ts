@@ -115,6 +115,8 @@ export interface StudentState {
   agentName?: string;
   /** How the agent talks (set phrases only). Unset = chill. */
   vibe?: "chill" | "strict" | "hype";
+  /** The name|vibe the last contact card showed, so a rename or vibe change sends a fresh one. */
+  cardFor?: string;
   /** First-contact questions still open: the name, then the vibe, then the class they worry about most. */
   pendingName?: { step: "name" | "vibe" | "focus"; tries: number };
   /** The student's answer to "which class worries you most?" (their words). */

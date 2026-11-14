@@ -20,6 +20,8 @@ export interface Opts {
   intakeWaitMs: number;
   /** The number voice drills call from, as the student will see it ("+16097854521"). */
   voiceNumber?: string;
+  /** The iMessage line's number ("+1628..."), for the contact card. Unset = no card. */
+  lineNumber?: string;
 }
 
 /** Demo controls and the demo student bypass quiet hours and caps. `true` = everyone; a list = only those students. */

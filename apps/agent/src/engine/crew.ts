@@ -11,6 +11,7 @@ import { askNext, refresh, tryAnswerAsk, needsAnswer } from "./onboarding.ts";
 import { NUDGE_ROUND, tick } from "./nudger.ts";
 import type { TickOptions, TickResult } from "./nudger.ts";
 import { runScout } from "./scout.ts";
+import { sendCard } from "./card.ts";
 import { moveProposal, proposeOnRequest } from "./planner.ts";
 import { finishDrill, gradeDrill, offerDrill, startDrill, timedOut, type Graded } from "./voice.ts";
 import type { CallStatus } from "@syllabus-crew/core";
@@ -155,9 +156,9 @@ export class Crew {
 
       // 3. Free text.
       const renamed = parseRename(text);
-      if (renamed) { state.agentName = renamed; return ctx.say(`Done. Call me ${renamed}.`, "naming"); }
+      if (renamed) { state.agentName = renamed; await ctx.say(`Done. Call me ${renamed}.`, "naming"); return this.refreshCard(ctx); }
       const vibe = parseVibeCommand(text);
-      if (vibe) { state.vibe = vibe; return ctx.say(voice(vibe).picked, "naming"); }
+      if (vibe) { state.vibe = vibe; await ctx.say(voice(vibe).picked, "naming"); return this.refreshCard(ctx); }
       if (isNameQuestion(text)) return ctx.say(`I'm ${this.nameOf(state)}, your personal agent from ${PRODUCT_NAME}. Say "call yourself ..." to rename me.`, "naming");
       const prefs = this.prefsCommand(ctx, text);
       if (prefs) return ctx.say(prefs, "prefs");
@@ -236,7 +237,18 @@ export class Crew {
       if (!v && !passed) { state.pendingName = undefined; return false; } // stays chill; treat the text as a normal message
       state.vibe = v ?? "chill";
       state.pendingName = { step: "focus", tries: 0 };
-      await ctx.say(`${voice(state.vibe).picked} Last one: which class worries you most this semester?`, "naming");
+      const last = "Last one: which class worries you most this semester?";
+      // The contact card: the name and face show in the thread header once they save it. If it fails, skip it quietly.
+      if (this.deps.opts.lineNumber && this.deps.messenger.sendFile) {
+        await ctx.say(voice(state.vibe).picked, "naming");
+        if (await sendCard(ctx)) {
+          await ctx.say(`That's my card. Tap it, then Create New Contact, and my texts will show up as ${this.nameOf(state)} with my face.\n\n${last}`, "naming");
+          return true;
+        }
+        await ctx.say(last, "naming");
+        return true;
+      }
+      await ctx.say(`${voice(state.vibe).picked} ${last}`, "naming");
       return true;
     }
     // The one open question. Their own words are kept; a command, a rename or a vibe change is handled normally instead.
@@ -246,6 +258,13 @@ export class Crew {
     const next = state.parsed ? "I'll keep an eye on it." : `Text me ${passed ? "a" : "that"} syllabus as a PDF and I'll take it from there.`;
     await ctx.say(`${passed ? "No problem." : "Noted."} ${next}`, "naming");
     return true;
+  }
+
+  /** After a rename or vibe change: a fresh card, if they already got one and it now shows the wrong name or face. */
+  private async refreshCard(ctx: Ctx): Promise<void> {
+    const { state } = ctx;
+    if (!state.cardFor || state.cardFor === `${this.nameOf(state)}|${state.vibe ?? "chill"}`) return;
+    if (await sendCard(ctx)) await ctx.say("Here's my updated card. Tap it to save the new one.", "naming");
   }
 
   /**
@@ -434,7 +453,7 @@ export class Crew {
       const state = day1State(id, true);
       state.route = prev.route;
       state.messages = prev.messages;
-      state.agentName = prev.agentName; state.vibe = prev.vibe; state.focusCourse = prev.focusCourse; // the name belongs to the thread, not the semester
+      state.agentName = prev.agentName; state.vibe = prev.vibe; state.cardFor = prev.cardFor; state.focusCourse = prev.focusCourse; // the name belongs to the thread, not the semester
       state.phase = "live"; state.parsed = true; state.syllabus = parsed; state.syllabusHash = hash;
       const ctx = makeCtx(this.deps, state);
       const { patch, missing } = refresh(state, this.deps.tz);
@@ -544,7 +563,7 @@ export class Crew {
       const next = week6State(id, this.deps.clock.now(), prev?.openedByStudent ?? false, this.deps.tz);
       next.messages = prev?.messages ?? [];
       next.route = prev?.route; // the Photon route belongs to the thread, not the demo state
-      next.agentName = prev?.agentName; next.vibe = prev?.vibe;
+      next.agentName = prev?.agentName; next.vibe = prev?.vibe; next.cardFor = prev?.cardFor;
       await this.deps.store.save(next);
     });
   }

@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { Photon } from "@photon-ai/api";
 import { io } from "socket.io-client";
-import type { Attachment, Messenger, Store } from "@syllabus-crew/core";
+import type { Attachment, Messenger, OutFile, Store } from "@syllabus-crew/core";
 import type { Inbound } from "../engine/crew.ts";
 
 export interface PhotonInbound extends Inbound { messageId: string; studentId: string; createdAt?: string; attachmentId?: string }
@@ -44,7 +44,7 @@ export function findMessages(node: unknown, out: any[] = []): any[] {
 }
 
 export class PhotonMessenger implements Messenger {
-  constructor(private photon: Photon, private projectId: string, private store: Store) {}
+  constructor(private photon: Photon, private projectId: string, private store: Store, private apiKey = "") {}
   async send(studentId: string, text: string) {
     const route = (await this.store.load(studentId))?.route;
     if (!route) throw new Error(`no Photon route for ${studentId}: they have not texted the line yet`);
@@ -52,6 +52,31 @@ export class PhotonMessenger implements Messenger {
       path: { id: this.projectId },
       headers: { "idempotency-key": randomUUID() },
       body: { spaceId: route.spaceId, senderId: route.senderId, content: { type: "text", format: "plain", text } } as any,
+    });
+  }
+
+  /** Upload, then send as an attachment. The upload is multipart/related: a JSON part, then the bytes (verified against the API). */
+  async sendFile(studentId: string, file: OutFile) {
+    const route = (await this.store.load(studentId))?.route;
+    if (!route) throw new Error(`no Photon route for ${studentId}: they have not texted the line yet`);
+    if (!this.apiKey) throw new Error("no Photon API key for uploads");
+    const boundary = `sc${randomUUID().replace(/-/g, "")}`;
+    const meta = JSON.stringify({ contentType: file.contentType, sizeBytes: file.bytes.length, filename: file.filename });
+    const body = Buffer.concat([
+      Buffer.from(`--${boundary}\r\nContent-Type: application/json\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: ${file.contentType}\r\n\r\n`),
+      Buffer.from(file.bytes),
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+    const res = await fetch(`https://api.photon.codes/v1/projects/${this.projectId}/attachments`, {
+      method: "POST", body,
+      headers: { authorization: `Bearer ${this.apiKey}`, "content-type": `multipart/related; boundary=${boundary}`, "idempotency-key": randomUUID() },
+    });
+    const att = (await res.json().catch(() => ({}))) as { id?: string; code?: string };
+    if (!res.ok || !att.id) throw new Error(`attachment upload failed: ${res.status} ${att.code ?? ""}`);
+    await this.photon.projects.sendMessage({
+      path: { id: this.projectId },
+      headers: { "idempotency-key": randomUUID() },
+      body: { spaceId: route.spaceId, senderId: route.senderId, content: { type: "attachment", attachmentId: att.id } } as any,
     });
   }
 }

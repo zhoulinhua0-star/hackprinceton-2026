@@ -1,0 +1,25 @@
+{
+  "name": "@syllabus-crew/agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts",
+    "demo:loop": "tsx src/scripts/demo-loop.ts",
+    "start": "tsx --env-file=../../.env src/server.ts",
+    "bedrock:smoke": "tsx --env-file=../../.env src/scripts/bedrock-smoke.ts",
+    "parse": "tsx --env-file=../../.env src/scripts/parse-syllabus.ts",
+    "questions": "tsx --env-file=../../.env src/scripts/write-questions.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^1.1.2",
+    "@photon-ai/api": "^0.6.0",
+    "socket.io-client": "^4.8.4",
+    "@syllabus-crew/core": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

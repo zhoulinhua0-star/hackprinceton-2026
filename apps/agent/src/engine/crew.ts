@@ -1,0 +1,343 @@
+import { isAmbiguous, isDontKnow, isHintRequest, isUnsure, parseReply, rankTopics, daysUntil, inQuietHours, parseReminder, formatWhen } from "@syllabus-crew/core";
+import { describe } from "@syllabus-crew/core";
+import { writeQuestions } from "./questions.ts";
+import type { TopicJob } from "./questions.ts";
+import type { CalendarWriter, ParsedSyllabus, StudentState } from "@syllabus-crew/core";
+import { approveProposal, declineProposal, pendingProposal } from "./approve.ts";
+import { bypassFor, makeCtx, safeText, type Ctx, type Deps, type Opts } from "./ctx.ts";
+import { askNext, refresh, tryAnswerAsk, needsAnswer } from "./onboarding.ts";
+import { NUDGE_ROUND, tick } from "./nudger.ts";
+import type { TickOptions, TickResult } from "./nudger.ts";
+import { runScout } from "./scout.ts";
+import { advanceSession, answerQuiz, renderQuiz, sendQuiz } from "./tutor.ts";
+import { day1State, stagedParse, week6State } from "../seed.ts";
+
+export interface CrewDeps extends Omit<Deps, "opts"> { calendar: CalendarWriter; opts?: Partial<Opts> }
+export interface Inbound { text?: string; hasImage?: boolean; route?: { spaceId: string; senderId: string } }
+
+/** Most texts one sender may send per hour before the agent stops answering (a flood guard for the public QR code). */
+const MAX_INBOUND_PER_HOUR = 40;
+const DEFAULTS: Opts = { bypassLimits: false, dashboardUrl: "http://localhost:3000", proposalDelayMs: 2000, llmTimeoutMs: 4000, llmProposals: false, sessionLength: 5, nextQuestionDelayMs: 1500 };
+
+/** Crew Lead: the one thing the student talks to. Routes to Scout / Tutor / Planner and enforces reply matching in code. */
+export class Crew {
+  private deps: Deps;
+  private calendar: CalendarWriter; // only ever passed to approveProposal
+  private locks = new Map<string, Promise<unknown>>();
+  private inboundLog = new Map<string, number[]>();
+
+  constructor(d: CrewDeps) {
+    const { calendar, opts, ...rest } = d;
+    this.deps = { ...rest, opts: { ...DEFAULTS, ...opts } };
+    this.calendar = calendar;
+  }
+
+  setBypass(on: boolean | string[]) { this.deps.opts.bypassLimits = on; }
+
+  private rateLimited(id: string): boolean {
+    const now = this.deps.clock.now().getTime();
+    const recent = (this.inboundLog.get(id) ?? []).filter((t) => now - t < 3_600_000);
+    recent.push(now);
+    this.inboundLog.set(id, recent);
+    return recent.length > MAX_INBOUND_PER_HOUR;
+  }
+
+  /** Serialize work per student so two quick texts can't overwrite each other's state. */
+  private async run<T>(id: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.locks.get(id) ?? Promise.resolve();
+    const next = prev.then(fn, fn);
+    this.locks.set(id, next.catch(() => undefined));
+    return next;
+  }
+
+  private async open(id: string, create: boolean): Promise<Ctx | undefined> {
+    let state = await this.deps.store.load(id);
+    if (!state) {
+      if (!create) return undefined;
+      state = day1State(id);
+    }
+    return makeCtx(this.deps, state);
+  }
+
+  // ---------- inbound ----------
+  async onInbound(id: string, msg: Inbound): Promise<void> {
+    if (this.rateLimited(id)) return; // flooding: stop answering until the hour rolls over
+    return this.run(id, async () => {
+      const ctx = (await this.open(id, true))!;
+      const { state } = ctx;
+      state.openedByStudent = true; // the student texted first
+      if (msg.route) state.route = msg.route;
+      state.messages.push({ dir: "in", text: msg.text ?? (msg.hasImage ? "[photo]" : ""), at: this.deps.clock.now().toISOString() });
+      state.messages = state.messages.slice(-200);
+      await ctx.commit();
+
+      if (state.pendingOffer && new Date(state.pendingOffer.expiresAt).getTime() <= this.deps.clock.now().getTime()) state.pendingOffer = undefined;
+      if (msg.hasImage) return this.onImage(ctx);
+      const text = (msg.text ?? "").trim();
+      const reply = parseReply(text);
+      const proposal = pendingProposal(ctx);
+
+      // 1. Replies to pending items are matched in code, before any LLM.
+      if (reply.kind === "choice" && state.pendingQuiz) return answerQuiz(ctx, reply.value);
+      if (reply.kind === "yes" && proposal) return approveProposal(ctx, this.calendar, proposal.id);
+      if (reply.kind === "no" && proposal) return declineProposal(ctx, proposal.id);
+
+      // 1a. The agent asked "want a quick round?" on its own: YES starts it, NO drops it.
+      if (state.pendingOffer && !proposal && !state.pendingQuiz && (reply.kind === "yes" || reply.kind === "no")) {
+        const offer = state.pendingOffer;
+        state.pendingOffer = undefined;
+        if (reply.kind === "no") return ctx.say("No problem. I'll check in again another time.", "nudge");
+        if (await sendQuiz(ctx, { solicited: true, startSession: NUDGE_ROUND, preferTopic: offer.topicId })) return;
+        return ctx.say("I don't have any new questions right now. Say \"quiz me\" later.", "clarify");
+      }
+
+      // 1b. A question about the syllabus is open: a date or percent answers it.
+      if (needsAnswer(state) && !state.pendingQuiz && (await tryAnswerAsk(ctx, text))) return;
+
+      // 2b. Leaving a practice round, or passing on a question.
+      if (state.session && /^(stop|enough|that'?s (all|enough)|no more|i'?m done|done|end)\W*$/i.test(text)) { state.session = undefined; return ctx.say(`Okay, that's enough for now. Say "quiz me" whenever you want more.`, "tutor"); }
+      // Tutoring while a question is open: giving up counts as a miss (hint first, answer on the second), a hint request is free.
+      if (state.pendingQuiz && (isDontKnow(text) || (!proposal && isUnsure(text)))) return answerQuiz(ctx, "unknown");
+      if (state.pendingQuiz && isHintRequest(text)) {
+        const q = state.questions.find((x) => x.id === state.pendingQuiz!.questionId)!;
+        state.pendingQuiz!.hinted = true; // so a later "I don't know" is treated as giving up
+        return ctx.say(`Hint: ${q.socratic}`, "tutor");
+      }
+      if (state.pendingQuiz && /^(skip|pass|next)\W*$/i.test(text)) {
+        state.askedQuestionIds.push(state.pendingQuiz.questionId);
+        state.pendingQuiz = undefined;
+        await ctx.say("Skipped.", "tutor");
+        return state.session ? advanceSession(ctx) : undefined;
+      }
+
+      // "skip" with only a proposal waiting (no question open) declines it.
+      if (proposal && !state.pendingQuiz && /^(skip|pass)\W*$/i.test(text)) return declineProposal(ctx, proposal.id);
+
+      // 2. Unclear replies while something is pending get a clarifying text, never an action.
+      if (proposal && isAmbiguous(text)) return ctx.say("I didn't catch that. Reply YES to add it to your calendar, or NO to skip it.", "clarify");
+      if (state.pendingQuiz && reply.kind === "other" && /^\S{1,3}$/.test(text)) return ctx.say("Reply A, B or C.", "clarify"); // a short mis-typed answer is not small talk
+      if (reply.kind === "choice") return ctx.say("I don't have a question open right now. Say \"quiz me\" for one.", "clarify");
+      if ((reply.kind === "yes" || reply.kind === "no") && !proposal) return ctx.say("Nothing to confirm right now.", "clarify");
+
+      // 3. Free text.
+      const prefs = this.prefsCommand(ctx, text);
+      if (prefs) return ctx.say(prefs, "prefs");
+      const rem = parseReminder(text, this.deps.clock.now(), this.deps.tz);
+      if (rem) {
+        if ("error" in rem) return ctx.say(rem.error === "no_what" ? "What should I remind you about?" : rem.error === "past" ? "That time has already passed today. Try a later time, or say tomorrow." : 'When should I remind you? For example "remind me Sunday to start the essay", or "in 2 hours".', "reminder");
+        (state.reminders ??= []).push({ id: `rem_${state.reminders.length + 1}`, text: rem.text, dueISO: rem.due.toISOString(), status: "pending", createdAt: this.deps.clock.now().toISOString() });
+        return ctx.say(`Got it. I'll remind you ${formatWhen(rem.due, this.deps.clock.now(), this.deps.tz)} to ${rem.text}.`, "reminder");
+      }
+      if (/\bquiz me\b|another (one|question)|next question|^(next|more|again|keep going|go on|continue)\W*$/i.test(text)) {
+        const open = state.pendingQuiz && state.questions.find((q) => q.id === state.pendingQuiz!.questionId);
+        if (open) return ctx.say(`Still waiting on this one:\n\n${renderQuiz(ctx, open)}`, "quiz");
+        if (await sendQuiz(ctx, { solicited: true, startSession: this.deps.opts.sessionLength })) return;
+        if (state.phase === "live" && !state.questions.length) {
+          if (state.questionsStatus === "generating") return ctx.say("I'm still writing your questions. Give me a minute.", "clarify");
+          void this.startQuestions(id, { announce: true }).catch(() => {}); // after this turn; never blocks the reply
+          return ctx.say("I'm writing your first questions now. I'll text you when they're ready.", "clarify");
+        }
+        return ctx.say("I can't send a question right now. Try again a bit later.", "clarify");
+      }
+      if (/\b(focus|prioriti[sz]e)\b|what should i (study|work on)/i.test(text)) return ctx.say(this.focusSummary(state), "focus");
+      const small = await safeText(this.deps, "smalltalk", "crew-lead", text,
+        "I'm here. I'll text you quiz questions on what's coming up, and I'll ask before I change your calendar.");
+      return ctx.say(small, "smalltalk");
+    });
+  }
+
+  /** "pause nudges for 2 days", "stop nudging me", "resume". Reminders the student set are never affected. */
+  private prefsCommand(ctx: Ctx, text: string): string | null {
+    const { state } = ctx;
+    const now = this.deps.clock.now();
+    let m: RegExpMatchArray | null;
+    if ((m = text.match(/^(?:please\s+)?(?:pause|mute|snooze)(?:\s+(?:the\s+)?(?:nudges|texts|notifications|messages))?(?:\s+for\s+(\d+)\s*(hour|day|week)s?)?\W*$/i))) {
+      const n = m[1] ? +m[1] : 3, unit = (m[2] ?? "day").toLowerCase();
+      const ms = n * (unit === "hour" ? 3_600_000 : unit === "week" ? 7 * 86_400_000 : 86_400_000);
+      state.prefs = { mutedUntil: new Date(now.getTime() + ms).toISOString() };
+      return `Okay, I'll stay quiet for ${n} ${unit}${n === 1 ? "" : "s"}. Reminders you set still come through. Say "resume" to turn nudges back on.`;
+    }
+    if (/^(?:please\s+)?(?:stop (?:nudging|texting|messaging|pinging) me|no more nudges)\W*$/i.test(text)) {
+      state.prefs = { mutedUntil: "2099-01-01T00:00:00.000Z" };
+      return 'Okay, no more nudges. Reminders you set still come through, and I\'m here whenever you text. Say "resume" to turn nudges back on.';
+    }
+    if (/^(?:please\s+)?(?:resume|unmute|start nudging|turn nudges on|you can text me again)\W*$/i.test(text)) {
+      state.prefs = undefined;
+      return "Back on. I'll nudge you when something's coming up.";
+    }
+    return null;
+  }
+
+  // ---------- the scheduler ----------
+  /** One scheduler pass for one student. Returns what was (or, in a dry run, would be) done. */
+  async tickStudent(id: string, o: TickOptions = {}): Promise<TickResult | undefined> {
+    return this.run(id, async () => { const c = await this.open(id, false); return c ? tick(c, o) : undefined; });
+  }
+  /** A pass over every student. Never texts anyone who hasn't texted the line first. */
+  async tickAll(o: TickOptions = {}): Promise<Record<string, TickResult>> {
+    const out: Record<string, TickResult> = {};
+    for (const id of await this.deps.store.ids()) { const r = await this.tickStudent(id, o); if (r) out[id] = r; }
+    return out;
+  }
+
+  private async onImage(ctx: Ctx): Promise<void> {
+    const { state, deps } = ctx;
+    if (state.phase === "day1" && !state.parsed) {
+      // Staged: the stored parse for the demo syllabus photo, not Textract + the LLM.
+      const p = stagedParse(deps.clock.now(), deps.tz);
+      state.courses = p.courses; state.exams = p.exams; state.topics = p.topics; state.parsed = true;
+      await ctx.say(`${p.summary} Here's your semester: ${deps.opts.dashboardUrl}`, "onboarding");
+      return;
+    }
+    return ctx.say("Got the photo. I can't read slide photos yet, so I'll stick to your syllabus topics for now.", "photo");
+  }
+
+  private focusSummary(state: StudentState): string {
+    const now = this.deps.clock.now();
+    const top = rankTopics(state, now, this.deps.tz)[0];
+    if (!top) return "Send me a photo of your syllabus and I'll tell you what to focus on.";
+    const topic = state.topics.find((t) => t.id === top.topicId)!;
+    const exam = state.exams.find((e) => e.topicIds.includes(top.topicId))!;
+    const pct = Math.round((state.mastery[top.topicId] ?? 0.5) * 100);
+    return `Focus on ${topic.name}: you're at ${pct}%, and ${exam.name} is ${Math.round(exam.weight * 100)}% of your grade in ${daysUntil(exam.date, now, this.deps.tz)} days.`;
+  }
+
+  // ---------- proactive / controls ----------
+  async runScoutNow(id: string): Promise<boolean> {
+    return this.run(id, async () => { const c = await this.open(id, false); return c ? runScout(c) : false; });
+  }
+  async sendQuizNow(id: string): Promise<boolean> {
+    return this.run(id, async () => { const c = await this.open(id, false); return c ? sendQuiz(c, { force: true }) : false; });
+  }
+  /** Dashboard Approve / Not now: same approve path as a YES text. */
+  async approveFromDashboard(id: string, proposalId: string, approve = true): Promise<void> {
+    return this.run(id, async () => {
+      const c = await this.open(id, false);
+      if (c) await (approve ? approveProposal(c, this.calendar, proposalId) : declineProposal(c, proposalId));
+    });
+  }
+
+  // ---------- real syllabus ----------
+  /**
+   * Installs a syllabus the reader produced as this student's semester, tells them what it found, and asks about
+   * what's missing. Returns undefined when the student has never texted the line: the agent never texts first.
+   */
+  async applySyllabus(id: string, parsed: ParsedSyllabus, hash?: string): Promise<{ summary: string; question: string | null } | undefined> {
+    return this.run(id, async () => {
+      const prev = await this.deps.store.load(id);
+      if (!prev?.openedByStudent || !prev.route) return undefined;
+      await this.deleteApprovedEvents(prev); // a new syllabus is a new semester: remove the old demo's calendar events
+      const state = day1State(id, true);
+      state.route = prev.route;
+      state.messages = prev.messages;
+      state.phase = "live"; state.parsed = true; state.syllabus = parsed; state.syllabusHash = hash;
+      const ctx = makeCtx(this.deps, state);
+      const { patch, missing } = refresh(state, this.deps.tz);
+      const summary = `${describe(parsed, patch, this.deps.tz, this.deps.clock.now())} Here's your semester: ${this.deps.opts.dashboardUrl}`;
+      await ctx.say(summary, "onboarding");
+      return { summary, question: await askNext(ctx, missing) };
+    });
+  }
+
+  /**
+   * Writes quiz questions for the topics that matter most right now. The slow model calls run outside the
+   * per-student lock, so the student's replies are never held up while the questions are being written.
+   */
+  async generateQuestions(id: string, o: { perTopic?: number; maxTopics?: number; announce?: boolean } = {}): Promise<{ started: boolean; added: number; reason?: string }> {
+    const plan = await this.planQuestions(id, o);
+    if ("reason" in plan) return { started: false, added: 0, reason: plan.reason };
+    return this.finishQuestions(id, plan, o);
+  }
+
+  /** Like generateQuestions, but returns as soon as it is known whether the writer started; the writing continues in the background. */
+  async startQuestions(id: string, o: { perTopic?: number; maxTopics?: number; announce?: boolean } = {}, onDone?: (r: { added: number }) => void): Promise<{ started: boolean; reason?: string }> {
+    const plan = await this.planQuestions(id, o);
+    if ("reason" in plan) return { started: false, reason: plan.reason };
+    void this.finishQuestions(id, plan, o).then((r) => onDone?.(r)).catch(() => onDone?.({ added: 0 }));
+    return { started: true };
+  }
+
+  private async planQuestions(id: string, o: { perTopic?: number; maxTopics?: number }) {
+    const perTopic = o.perTopic ?? 3, maxTopics = o.maxTopics ?? 8;
+    // 1. decide what to write (locked, quick)
+    return this.run(id, async () => {
+      const state = await this.deps.store.load(id);
+      if (!state?.syllabus || state.phase !== "live") return { reason: "no real syllabus installed" } as const;
+      if (state.questionsStatus === "generating") return { reason: "already writing" } as const;
+      const have = (topicId: string) => state.questions.filter((q) => q.topicId === topicId && !state.askedQuestionIds.includes(q.id)).length;
+      const jobs: TopicJob[] = [];
+      for (const { topicId } of rankTopics(state, this.deps.clock.now(), this.deps.tz)) {
+        if (jobs.length >= maxTopics) break;
+        if (have(topicId) >= perTopic) continue;
+        const topic = state.topics.find((t) => t.id === topicId), exam = state.exams.find((e) => e.topicIds.includes(topicId));
+        if (topic && exam && !/^cumulative$/i.test(topic.name.trim())) jobs.push({ topicId, topic: topic.name, assessment: exam.name, course: state.courses[0]?.name ?? "" });
+      }
+      if (!jobs.length) return { reason: "nothing to write" } as const;
+      state.questionsStatus = "generating";
+      await this.deps.store.save(state);
+      return { jobs, startAt: state.questions.length, perTopic } as const;
+    });
+  }
+
+  private async finishQuestions(id: string, plan: { jobs: TopicJob[]; startAt: number; perTopic: number }, o: { announce?: boolean }): Promise<{ started: boolean; added: number }> {
+    const perTopic = plan.perTopic;
+    // 2. the slow part: no lock held
+    let written: Awaited<ReturnType<typeof writeQuestions>> | undefined;
+    try { written = await writeQuestions(this.deps.llm, plan.jobs, perTopic, plan.startAt); } catch { /* handled below */ }
+
+    // 3. save the result and (optionally) tell the student
+    return this.run(id, async () => {
+      const ctx = await this.open(id, false);
+      if (!ctx) return { started: true, added: 0 };
+      const { state } = ctx;
+      const qs = written?.questions ?? [];
+      const ids = new Set(state.questions.map((q) => q.id));
+      const fresh = qs.filter((q) => !ids.has(q.id));
+      state.questions.push(...fresh);
+      state.unlockedQuestionIds.push(...fresh.map((q) => q.id));
+      state.questionsStatus = state.questions.length ? "ready" : "failed";
+      await ctx.commit();
+      const quiet = !bypassFor(this.deps, id) && inQuietHours(this.deps.clock.now(), this.deps.tz);
+      if (o.announce && fresh.length && !quiet) await ctx.say(`I wrote ${fresh.length} practice question${fresh.length === 1 ? "" : "s"} for your upcoming work. Say "quiz me" whenever you want one.`, "tutor");
+      return { started: true, added: fresh.length };
+    });
+  }
+
+  /** True if this exact upload is already installed for the student (a double click or a re-send). */
+  async hasSyllabus(id: string, hash: string): Promise<boolean> {
+    const s = await this.deps.store.load(id);
+    return s?.phase === "live" && s.syllabusHash === hash;
+  }
+
+  private async deleteApprovedEvents(prev: StudentState | undefined): Promise<{ removedEvents: number; failedEvents: number }> {
+    let removedEvents = 0, failedEvents = 0;
+    for (const p of prev?.proposals ?? []) {
+      if (p.status !== "approved" || !p.calendarEventId || !this.calendar.deleteEvent) continue;
+      try { await this.calendar.deleteEvent(p.calendarEventId); removedEvents++; } catch { failedEvents++; }
+    }
+    return { removedEvents, failedEvents };
+  }
+
+  // ---------- demo states ----------
+  /** The iMessage thread can't be reset; the thread stays "opened" so proactive texts still work. */
+  async resetDemo(id: string): Promise<{ removedEvents: number; failedEvents: number }> {
+    return this.run(id, async () => {
+      const prev = await this.deps.store.load(id);
+      // Remove the calendar events this demo created, so reruns don't pile up on the same slot.
+      const { removedEvents, failedEvents } = await this.deleteApprovedEvents(prev);
+      const next = day1State(id, prev?.openedByStudent ?? false);
+      next.route = prev?.route; // the Photon route belongs to the thread, not the demo state
+      await this.deps.store.save(next);
+      return { removedEvents, failedEvents };
+    });
+  }
+  async switchToWeek6(id: string): Promise<void> {
+    return this.run(id, async () => {
+      const prev = await this.deps.store.load(id);
+      const next = week6State(id, this.deps.clock.now(), prev?.openedByStudent ?? false, this.deps.tz);
+      next.messages = prev?.messages ?? [];
+      next.route = prev?.route; // the Photon route belongs to the thread, not the demo state
+      await this.deps.store.save(next);
+    });
+  }
+}

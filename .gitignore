@@ -1,0 +1,10 @@
+.env
+.env.*
+node_modules/
+.next/
+.DS_Store
+.data/
+next-env.d.ts
+*.tsbuildinfo
+seed/private/
+!.env.example

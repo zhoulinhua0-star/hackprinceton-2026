@@ -33,8 +33,9 @@ Reset demo -> text `seed/macro-syllabus.jpg` (any first image works; staged pars
 5. Judge QR flow test with a second phone: a shared line only replies to numbers with an assignment (createSharedLineAssignment via the Photon MCP), max 25 seats. Untested with an unassigned number.
 6. Stretch: voice (Photon SMS number + SIP provider), Gmail scan, crunch heatmap.
 
-## Before the repo goes public
-- Rewrite history or publish a fresh squashed repo: early commits contain the presenter's real phone number (already removed from files). Never commit .env, .data/, seed/private/.
+## Repo is public (done)
+- Pushed as ONE clean commit. Local-only backup branches `full-history` and `old-main` contain the real phone number: never push them. Never commit .env, .data/, seed/private/.
+- Stage demo script and rehearsal log: DEMO-SCRIPT.md.
 - Keep `PHOTON_WEBHOOK_SECRET` (unused) out; delete stale vars.
 
 ## Known limits (be honest in the pitch)

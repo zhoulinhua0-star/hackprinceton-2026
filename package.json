@@ -2,5 +2,8 @@
   "name": "syllabus-crew",
   "private": true,
   "type": "module",
-  "workspaces": ["apps/*", "packages/*"]
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "seat": "npm run seat -w @syllabus-crew/agent --"
+  }
 }

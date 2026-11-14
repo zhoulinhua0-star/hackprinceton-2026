@@ -124,3 +124,14 @@ test("topicLabel: a short readable name for a reading", () => {
   assert.equal(topicLabel("A".repeat(80)).length, 46);
   assert.equal(topicLabel("Selections from"), "Selections from"); // never returns an empty label
 });
+
+import { normalizePhone, parseTesters, prettyPhone } from "./logic.ts";
+test("TESTERS: full numbers in any common format; typos and short numbers are dropped, never widened", () => {
+  assert.deepEqual(parseTesters("+1 (609) 555-0123, +16095550123;+44 20 7946 0958\n 6095550123, +1, abc"), ["+16095550123", "+442079460958"]);
+  assert.deepEqual(parseTesters(undefined), []);
+  assert.deepEqual(parseTesters(""), []);
+  assert.equal(normalizePhone(" +1 609.555.0123 "), "+16095550123");
+  assert.equal(normalizePhone("609 555 0123"), null); // no country code: refuse rather than guess
+  assert.equal(prettyPhone("+16095550123"), "+1 (609) 555-0123");
+  assert.equal(prettyPhone("+442079460958"), "+442079460958");
+});

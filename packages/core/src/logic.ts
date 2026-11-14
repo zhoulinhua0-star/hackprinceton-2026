@@ -153,3 +153,27 @@ export function topicLabel(name: string, max = 46): string {
   if (t.length > max) t = `${t.slice(0, max - 1).trim()}…`;
   return t;
 }
+
+// ---- testers ----
+/**
+ * TESTERS in .env: phone numbers (comma or space separated) that get the demo student's treatment: no quiet hours
+ * and no daily caps (DECISIONS #110). Anything that isn't a full E.164 number after stripping spaces, dashes,
+ * dots and brackets is dropped, so a typo never widens the list.
+ */
+export function parseTesters(raw: string | undefined): string[] {
+  const out = new Set<string>();
+  for (const part of (raw ?? "").split(/[,;\n]+/)) {
+    const n = normalizePhone(part);
+    if (n) out.add(n);
+  }
+  return [...out];
+}
+
+/** "+1 (609) 555-0123" → "+16095550123". Only full E.164 numbers (a leading +) pass; anything else is null. */
+export function normalizePhone(raw: string): string | null {
+  const n = raw.trim().replace(/[\s().-]/g, "");
+  return /^\+[1-9]\d{7,14}$/.test(n) ? n : null;
+}
+
+/** "+16095550123" → "+1 (609) 555-0123" for US numbers; others unchanged. */
+export const prettyPhone = (n: string) => n.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, "+1 ($1) $2-$3");

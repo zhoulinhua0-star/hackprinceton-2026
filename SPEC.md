@@ -21,7 +21,7 @@ Builder's iPhone (mirrored with QuickTime) next to the web dashboard on the lapt
 Close: "Your quiz answers just rewrote your calendar. Nobody opened an app."
 
 ## User journey
-1. Scan the QR code or tap the sms: link. Messages opens with "Hi Syllabus Crew" pre-filled. The student sends it, so the student always texts first.
+1. The student texts the line first (a seat is added for their number; no QR, see DECISIONS #109). The agent never texts first into a new thread.
 2. The agent asks for syllabus photos. The student sends them and the agent parses them (Textract, then LLM, then schema check). It asks only about what's missing.
 3. Each morning, up to 3 quiz texts arrive on the topics with the most at stake. The student replies A/B/C or a short answer.
 4. The Planner texts proposals, and the student replies YES or NO. YES writes to Google Calendar, or to the dashboard if Google isn't connected.

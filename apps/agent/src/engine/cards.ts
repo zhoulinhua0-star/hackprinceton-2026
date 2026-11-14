@@ -2,13 +2,14 @@
 // Publishing never throws and never blocks a reply: if the card store is missing or down, the text goes out alone.
 import { randomBytes } from "node:crypto";
 import { cardId, drillCard, roundCard, semesterCard, weekCard, DEFAULT_AGENT_NAME, type Card, type Drill, type Proposal } from "@syllabus-crew/core";
-import type { Ctx } from "./ctx.ts";
+import { lineFor, type Ctx } from "./ctx.ts";
 
 async function publish(ctx: Ctx, id: string, card: Card): Promise<string | null> {
   const store = ctx.deps.cards;
   if (!store) return null;
   try {
-    return await store.put(id, card);
+    const line = lineFor(ctx.deps, ctx.state);
+    return await store.put(id, line ? { ...card, line } : card);
   } catch (e) {
     console.error(`[cards] not published: ${(e as Error).message}`);
     return null;

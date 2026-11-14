@@ -18,8 +18,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 const C = { ink: "#1e2740", lead: "#2c6e6a", tutor: "#c8553d", planner: "#6d7fb3", nudger: "#7a9e5a", good: "#2f7a5b", bad: "#c2412d", muted: "#5d6377" };
 const BUB = "M36 20h48a24 24 0 0 1 24 24v22a24 24 0 0 1-24 24H62l-20 18 3-18.4A24 24 0 0 1 12 66V44a24 24 0 0 1 24-24z";
-const line = process.env.LINE_NUMBER ?? "";
-const sms = (body: string) => `sms:${line}&body=${encodeURIComponent(body)}`;
+/** The line this card's student texts (their seat's line), else the site's default line. */
+const lineOf = (c: { line?: string }) => c.line ?? process.env.LINE_NUMBER ?? "";
+const sms = (line: string, body: string) => `sms:${line}&body=${encodeURIComponent(body)}`;
 
 /** A small calendar glyph for the Google Calendar button (generic, not Google's logo). */
 function GCal() {
@@ -191,7 +192,7 @@ function Week({ c }: { c: WeekCard }) {
       <div className="sec"><div className="h"><span>Why this slot</span></div>
         <ul className="why">{c.why.map((w, i) => <li key={i}><i>{i + 1}</i><span><b>{w.strong}</b>{w.rest}</span></li>)}</ul>
       </div>
-      {c.status === "pending" && line && (<><a className="cta" href={sms("YES")}>Reply YES to book it</a><a className="cta ghost" href={sms("Make it ")}>Pick another time</a></>)}
+      {c.status === "pending" && lineOf(c) && (<><a className="cta" href={sms(lineOf(c), "YES")}>Reply YES to book it</a><a className="cta ghost" href={sms(lineOf(c), "Make it ")}>Pick another time</a></>)}
       {booked && c.calendarUrl && <a className="cta cal" href={c.calendarUrl} target="_blank" rel="noopener noreferrer"><GCal />Open in Google Calendar</a>}
       <div className="foot">{booked ? "It's on your calendar." : "Nothing goes on your calendar until you text YES."}</div>
     </>
@@ -234,7 +235,7 @@ function Round({ c }: { c: RoundCard }) {
           ))}
         </div>
       )}
-      {line && <a className="cta" href={sms("quiz me")}>Another round</a>}
+      {lineOf(c) && <a className="cta" href={sms(lineOf(c), "quiz me")}>Another round</a>}
       <div className="foot">Scores are counted by code, not guessed.</div>
     </>
   );
@@ -269,7 +270,7 @@ function Drill({ c }: { c: DrillCard }) {
             <div className="tr"><div className="was" style={{ width: pct(Math.min(c.before, c.after)) }} /><div className="now" style={{ width: pct(c.after), background: c.after >= c.before ? C.tutor : C.bad }} /></div></div>
         </div>
       )}
-      {line && <a className="cta" href={sms("CALL")}>Text CALL to try again</a>}
+      {lineOf(c) && <a className="cta" href={sms(lineOf(c), "CALL")}>Text CALL to try again</a>}
       <div className="foot">Graded from the call transcript. The audio isn&apos;t kept here.</div>
     </>
   );

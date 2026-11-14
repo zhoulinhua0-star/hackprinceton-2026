@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import type { Attachment, CalendarWriter, ParsedSyllabus, StudentState } from "@syllabus-crew/core";
 import { readSyllabus } from "./syllabus.ts";
 import { approveProposal, declineProposal, pendingProposal } from "./approve.ts";
-import { bypassFor, makeCtx, safeText, type Ctx, type Deps, type Opts } from "./ctx.ts";
+import { bypassFor, lineFor, makeCtx, safeText, type Ctx, type Deps, type Opts } from "./ctx.ts";
 import { askNext, refresh, tryAnswerAsk, needsAnswer } from "./onboarding.ts";
 import { NUDGE_ROUND, tick } from "./nudger.ts";
 import type { TickOptions, TickResult } from "./nudger.ts";
@@ -21,7 +21,7 @@ import { day1State, stagedParse, week6State } from "../seed.ts";
 
 export interface CrewDeps extends Omit<Deps, "opts"> { calendar: CalendarWriter; opts?: Partial<Opts> }
 export interface Inbound {
-  text?: string; hasImage?: boolean; route?: { spaceId: string; senderId: string };
+  text?: string; hasImage?: boolean; route?: { spaceId: string; senderId: string; line?: string };
   /** Fetches the texted file (a photo or a PDF) when it is actually needed. Null = not a readable file. */
   file?: () => Promise<Attachment | null>;
 }
@@ -265,12 +265,18 @@ export class Crew {
     const passed = /^(skip|idk|i don'?t know|dunno|whatever|none|nothing|you (pick|choose|decide)|default)\W*$/i.test(text);
     if (p.step === "vibe") {
       const v = parseVibe(text);
+      // One off-script answer ("be romantic") gets one re-ask, like the name step; a second one stays chill.
+      if (!v && !passed && !isCommand && p.tries === 0) {
+        p.tries = 1;
+        await ctx.say("I can do chill, strict or hype. Which one? Or say skip and I'll stay chill.", "naming");
+        return true;
+      }
       if (!v && !passed) { state.pendingName = undefined; return false; } // stays chill; treat the text as a normal message
       state.vibe = v ?? "chill";
       state.pendingName = { step: "focus", tries: 0 };
       const last = "Last one: which class worries you most this semester?";
       // The contact card: the name and face show in the thread header once they save it. If it fails, skip it quietly.
-      if (this.deps.opts.lineNumber && this.deps.messenger.sendFile) {
+      if (lineFor(this.deps, state) && this.deps.messenger.sendFile) {
         await ctx.say(voice(state.vibe).picked, "naming");
         if (await sendCard(ctx)) {
           await ctx.say(`That's my card. Tap it, then Create New Contact, and my texts will show up as ${this.nameOf(state)} with my face.\n\n${last}`, "naming");

@@ -7,7 +7,7 @@ import { topicLabel } from "./logic.ts";
 
 export type CardKind = "semester" | "week" | "round" | "drill";
 
-interface Base { v: 1; kind: CardKind; agentName: string; tz: string; updatedAt: string }
+interface Base { v: 1; kind: CardKind; agentName: string; tz: string; updatedAt: string; /** The line Syl texts this student from (its own public number), for the page's reply buttons. */ line?: string }
 
 export interface SemesterCard extends Base {
   kind: "semester";

@@ -3,7 +3,7 @@
 import { createServer, type IncomingMessage } from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { createHash, randomBytes } from "node:crypto";
-import { FakeCalendar, FakeLLM } from "@syllabus-crew/core";
+import { FakeCalendar, FakeLLM, parseTesters } from "@syllabus-crew/core";
 import type { CalendarWriter } from "@syllabus-crew/core";
 import { calendarRouter } from "./adapters/calendar-router.ts";
 import { GoogleCalendar } from "./adapters/google.ts";
@@ -28,6 +28,8 @@ const token = env("DEMO_ADMIN_TOKEN"), defaultStudent = env("DEMO_STUDENT");
 const port = Number(env("AGENT_PORT", "8787"));
 const tz = env("STUDENT_TIMEZONE", "America/New_York");
 const demoMode = process.env.DEMO_MODE !== "false";
+/** Phones that get the same treatment as the demo student (no quiet hours, no caps); Google Calendar stays the demo student's only. */
+const testers = parseTesters(process.env.TESTERS);
 /** off = no scheduler; dry (default) = logs what it WOULD send, sends nothing; on = really texts. */
 const schedulerMode = (process.env.SCHEDULER ?? "dry") as "off" | "dry" | "on";
 
@@ -63,9 +65,9 @@ const caller = process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_AGENT_ID
 const cards = process.env.BLOB_READ_WRITE_TOKEN && process.env.CARDS_URL ? new VercelCards({ token: process.env.BLOB_READ_WRITE_TOKEN, siteUrl: process.env.CARDS_URL }) : undefined;
 const crew = new Crew({ caller, cards,
   store, messenger, llm, calendar, clock: { now: () => new Date() }, tz,
-  // Demo mode bypasses quiet hours and caps for the demo student only, never for strangers who scan the QR.
+  // Demo mode bypasses quiet hours and caps for the demo student and the TESTERS list only, never for strangers.
   // STAGED_PHOTO=false makes "read texted photos for real" the default; the /demo switch changes it while running.
-  opts: { bypassLimits: demoMode ? [defaultStudent] : false, dashboardUrl: env("DASHBOARD_URL", "http://localhost:3000"), stagedPhoto: process.env.STAGED_PHOTO !== "false", voiceNumber, lineNumber: process.env.PHOTON_IMESSAGE_LINE || undefined },
+  opts: { bypassLimits: demoMode ? [defaultStudent, ...testers] : false, dashboardUrl: env("DASHBOARD_URL", "http://localhost:3000"), stagedPhoto: process.env.STAGED_PHOTO !== "false", voiceNumber, lineNumber: process.env.PHOTON_IMESSAGE_LINE || undefined },
 });
 
 const stop = listen({ photon, projectId, apiKey, log, onMessage: (m) => crew.onInbound(m.studentId, {
@@ -195,7 +197,7 @@ createServer(async (req, res) => {
     log(`http error: ${String(e)}`);
     return send(500, { error: "internal error" });
   }
-}).listen(port, "127.0.0.1", () => log(`agent up: http://127.0.0.1:${port} (this machine only)  (demo mode ${demoMode ? "ON: quiet hours and caps bypassed" : "off"}; llm ${llm.constructor.name}; calendar ${calendarMode()}; scheduler ${schedulerMode}; voice drills ${caller ? "on" : "off"}; cards ${cards ? "on" : "off"})`));
+}).listen(port, "127.0.0.1", () => log(`agent up: http://127.0.0.1:${port} (this machine only)  (demo mode ${demoMode ? `ON: quiet hours and caps bypassed for the demo student${testers.length ? ` + ${testers.length} tester(s)` : ""}` : "off"}; llm ${llm.constructor.name}; calendar ${calendarMode()}; scheduler ${schedulerMode}; voice drills ${caller ? "on" : "off"}; cards ${cards ? "on" : "off"})`));
 
 // ---- voice drills: check open calls every 5 s; a finished call is graded and recapped by text ----
 if (caller) setInterval(() => void crew.checkAllDrills().catch((e) => log(`drill check failed: ${String(e)}`)), 5000);

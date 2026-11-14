@@ -2,7 +2,7 @@
 // Photon can't set a profile on a shared line (DECISIONS #105), so this is a .vcf the student saves.
 import { readFileSync } from "node:fs";
 import { buildVCard, cardFilename, DEFAULT_AGENT_NAME, type Vibe } from "@syllabus-crew/core";
-import type { Ctx } from "./ctx.ts";
+import { lineFor, type Ctx } from "./ctx.ts";
 
 const photos = new Map<string, Uint8Array | null>();
 /** The avatar for a vibe (apps/agent/assets/avatar-<vibe>.png, the "Bubble" design). Missing file = a card without a photo. */
@@ -20,7 +20,7 @@ export function avatar(vibe: Vibe | undefined): Uint8Array | null {
  */
 export async function sendCard(ctx: Ctx): Promise<boolean> {
   const { deps, state } = ctx;
-  const line = deps.opts.lineNumber;
+  const line = lineFor(deps, state);
   if (!line || !deps.messenger.sendFile) return false;
   const name = state.agentName ?? DEFAULT_AGENT_NAME;
   const card = buildVCard({ name, phone: line, voiceNumber: deps.opts.voiceNumber, photoPng: avatar(state.vibe) ?? undefined });

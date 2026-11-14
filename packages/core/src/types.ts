@@ -87,7 +87,7 @@ export interface StudentState {
   busy: Busy[];
   preferredWeekday?: number;
   /** Where to send texts for this student (Photon space + the agent's user id). */
-  route?: { spaceId: string; senderId: string };
+  route?: { spaceId: string; senderId: string; /** The Photon line this student texts (shared-line seats can land on different lines). */ line?: string };
   /** The syllabus as read (live phase). Kept so the student's answers can update it. */
   syllabus?: ParsedSyllabus;
   /** Fingerprint of the uploaded file(s), so uploading the same thing twice does nothing. */

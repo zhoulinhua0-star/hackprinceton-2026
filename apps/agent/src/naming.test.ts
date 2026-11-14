@@ -31,6 +31,20 @@ test("first text: the agent introduces itself, takes a name, then a vibe", async
   assert.equal(st.pendingName, undefined);
 });
 
+test("an off-script vibe answer gets one re-ask, then the real vibe still lands (real-phone run, Nov 14)", async () => {
+  const s = setup();
+  await s.say("Yo... Who do you think you are?"); await s.say("sweetie");
+  await s.say("I want you to be romantic.");
+  assert.equal(s.last(), "I can do chill, strict or hype. Which one? Or say skip and I'll stay chill.");
+  await s.say("Chill");
+  assert.match(s.last(), /^Chill it is\..*Last one: which class worries you most this semester\?$/);
+  assert.equal((await s.store.load(ME))!.vibe, "chill");
+  // A second off-script answer gives up quietly (stays chill) and the text is handled as a normal message.
+  const t = setup();
+  await t.say("Hi"); await t.say("Juno"); await t.say("be romantic"); await t.say("no really, romantic");
+  assert.equal((await t.store.load(ME))!.pendingName, undefined);
+});
+
 test("the agent can text first, but only into a thread it already has", async () => {
   const s = setup();
   assert.deepEqual(await s.crew.startOnboarding(ME), { sent: false, reason: "no thread yet: text the line once so there is a thread to reply in" });
@@ -152,6 +166,21 @@ test("brand-new student: after the vibe, the agent texts its card with the chose
   assert.equal(st.pendingName?.step, "focus");
   await s.say("Macro");
   assert.equal(s.msg.sent.at(-1), "Noted. Text me that syllabus as a PDF and I'll take it from there.");
+});
+
+test("a seat on another line: the card carries the line they actually text, not the configured one", async () => {
+  const s = cardSetup("+15555550199");
+  await s.crew.onInbound(ME, { text: "Hi", route: { spaceId: "pho_spc_x", senderId: "pho_usr_y", line: "+15555550177" } });
+  await s.say("Juno"); await s.say("chill");
+  assert.match(s.msg.files[0]!.text, /TEL;TYPE=CELL:\+15555550177/);
+  assert.doesNotMatch(s.msg.files[0]!.text, /5555550199/);
+});
+
+test("no configured line but a known seat line: the card still goes out", async () => {
+  const s = cardSetup("");
+  await s.crew.onInbound(ME, { text: "Hi", route: { spaceId: "pho_spc_x", senderId: "pho_usr_y", line: "+15555550177" } });
+  await s.say("Juno"); await s.say("chill");
+  assert.equal(s.msg.files.length, 1);
 });
 
 test("a failed card never breaks onboarding: no mention of it, the last question still comes", async () => {

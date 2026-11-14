@@ -56,6 +56,30 @@ test("syllabus read: the summary without the localhost link, then the semester c
   assert.ok(updated.items.some((i) => i.name === "Final" && i.dateISO));
 });
 
+test("each card carries the line this student texts, for its reply buttons; none known, none written", async () => {
+  const s = setup();
+  await s.crew.onInbound(ME, { text: "Hi", route: { ...ROUTE, line: "+15555550177" } });
+  await s.say("skip"); await s.say("skip"); await s.say("Macro");
+  const before = s.texts().length;
+  await s.crew.applySyllabus(ME, SYLLABUS);
+  const link = s.texts().slice(before).find((t) => LINK.test(t))!;
+  assert.equal(s.card<SemesterCard>(link).line, "+15555550177");
+
+  const t = setup();
+  await t.crew.onInbound(ME, { text: "Hi", route: ROUTE });
+  await t.say("skip"); await t.say("skip"); await t.say("Macro");
+  const b2 = t.texts().length;
+  await t.crew.applySyllabus(ME, SYLLABUS);
+  assert.equal(t.card<SemesterCard>(t.texts().slice(b2).find((x) => LINK.test(x))!).line, undefined);
+});
+
+test("TESTERS get the demo student's treatment; everyone else keeps the limits", async () => {
+  const { bypassFor } = await import("./engine/ctx.ts");
+  const deps = { opts: { bypassLimits: ["+15555550100", "+15555550111"] } } as Parameters<typeof bypassFor>[0];
+  assert.equal(bypassFor(deps, "+15555550111"), true);
+  assert.equal(bypassFor(deps, "+15555550222"), false);
+});
+
 test("no card store: the old text with the dashboard link, nothing else", async () => {
   const s = setup({ store: false });
   await s.crew.onInbound(ME, { text: "Hi", route: ROUTE });

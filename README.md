@@ -77,7 +77,9 @@ npm run start -w @syllabus-crew/agent   # the real agent (Photon + Bedrock + Goo
 npm run dev   -w @syllabus-crew/web     # dashboard at http://localhost:3000
 ```
 
-Open `/join` on the dashboard for a QR code that opens Messages with the first text pre-filled. Presenter controls live at `/demo`, with no key: the dashboard listens on this machine only, so do not deploy or tunnel it as it is. Both servers listen on this machine only.
+**Someone else's phone:** `npm run seat -- +1 609 555 0123` gives them a seat on the shared line and prints the line they should text (Photon picks it; it can differ from yours). Add their number to `TESTERS` in `.env` for no quiz limits, restart the agent. `npm run seat -- list` shows seats; `npm run seat -- release +1...` frees one. Their thread is the same product as yours, except Google Calendar, which stays the demo student's (they get the stand-in).
+
+Presenter controls live at `/demo`, with no key: the dashboard listens on this machine only, so do not deploy or tunnel it as it is. Both servers listen on this machine only.
 
 ### Setup
 
@@ -87,7 +89,7 @@ Open `/join` on the dashboard for a QR code that opens Messages with the first t
 | **AWS Bedrock**, Claude Haiku 4.5 (default) and Sonnet 4.6 enabled in `us-east-1` | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `BEDROCK_MODEL_DEFAULT=us.anthropic.claude-haiku-4-5-20251001-v1:0`, `BEDROCK_MODEL_STRONG=us.anthropic.claude-sonnet-4-6` |
 | **Amazon DynamoDB** (optional; state stays in `.data/state.json` without it) | `STORE=dynamo`, optional `DYNAMODB_TABLE_PREFIX` (default table `syllabus-crew-students`). The IAM user needs `dynamodb:CreateTable`, `DescribeTable`, `TagResource`, `PutItem`, `GetItem`, `Scan` on that table. Run `npm run dynamo:setup -w @syllabus-crew/agent` once |
 | **Google Calendar**: OAuth client (Testing mode), `calendar.events` scope only | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:8787/auth/google/callback`. Connect once at `/auth/google?token=<DEMO_ADMIN_TOKEN>` on the agent |
-| **Demo** | `DEMO_ADMIN_TOKEN` (a long random string), `DEMO_STUDENT` (the demo phone number), `DEMO_MODE=true` (bypasses quiet hours and caps for the demo student only), `STUDENT_TIMEZONE`, `AGENT_PORT`, `AGENT_URL`, `DASHBOARD_URL` |
+| **Demo** | `DEMO_ADMIN_TOKEN` (a long random string), `DEMO_STUDENT` (the demo phone number), `DEMO_MODE=true` (bypasses quiet hours and caps for the demo student only), `TESTERS` (comma-separated numbers that get the same bypass), `STUDENT_TIMEZONE`, `AGENT_PORT`, `AGENT_URL`, `DASHBOARD_URL` |
 
 Secrets live only in `.env` and `.data/` (both gitignored). The dashboard talks to the agent through server-side routes, so the browser never sees the agent URL or the token.
 
@@ -95,7 +97,7 @@ Secrets live only in `.env` and `.data/` (both gitignored). The dashboard talks 
 
 ```
 apps/agent/   Node/TS agent: engine/ (Crew Lead, Scout, Tutor, Planner, approve path), adapters/ (Photon, Bedrock, Google, file store), server.ts
-apps/web/     Next.js dashboard, /join QR page, /demo controls
+apps/web/     Next.js dashboard, /demo controls
 packages/core Types, interfaces, pure logic (+ unit tests), fakes
 agents/*.md   Rules for each agent: change behavior by editing markdown
 seed/         Demo syllabus image

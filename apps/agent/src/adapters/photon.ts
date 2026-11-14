@@ -28,7 +28,7 @@ export function toInbound(m: any): PhotonInbound | undefined {
     text: type === "text" ? m.content.text : undefined,
     hasImage: type === "attachment",
     ...(type === "attachment" && typeof m.content.attachmentId === "string" ? { attachmentId: m.content.attachmentId } : {}),
-    route: { spaceId: m.space.id, senderId: m.receivedBy.id },
+    route: { spaceId: m.space.id, senderId: m.receivedBy.id, ...(typeof m.receivedBy.handle === "string" ? { line: m.receivedBy.handle } : {}) },
   };
 }
 

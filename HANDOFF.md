@@ -1,7 +1,8 @@
 # Handoff: where the project stands
 
 Read this first when resuming. Last updated after commit 7eeaeee (Nov 14, ~4:45 PM ET), pushed to GitHub. 227 tests pass (`npm test -w @syllabus-crew/core -w @syllabus-crew/agent`: 69 core + 158 agent); all 4 workspaces typecheck (`npm run typecheck --workspaces --if-present`).
-Details live in SPEC.md, PLAN.md, DECISIONS.md (108 numbered decisions), README.md, CLAUDE.md (hard rules), DEMO-SCRIPT.md (stage run).
+Details live in SPEC.md, PLAN.md, DECISIONS.md (110 numbered decisions), README.md, CLAUDE.md (hard rules), DEMO-SCRIPT.md (stage run), PITCH.md (what to say, deck, the table step on a judge's phone, Q&A, check list).
+Nov 14 evening: /join + QR deleted (#109); seat command, TESTERS, per-person line (#110), CONFIRMED with a friend's phone (seat landed on +1 628 316 6196, fast replies); vibe step re-asks once after an off-script answer; PITCH.md. 234 tests pass (70 core + 164 agent); 4 workspaces typecheck; card site redeployed.
 
 ## What is built and confirmed on the real iPhone
 - Photon iMessage in/out (shared line +1 628 502 3837; no typing indicator on shared lines; files arrive as attachmentId and download).
@@ -18,6 +19,7 @@ Details live in SPEC.md, PLAN.md, DECISIONS.md (108 numbered decisions), README.
 - Dashboard "Study Desk" look (#95): characters, phone-framed thread with sender labels, scroll-revealed crew tree, Meet the crew tabs, drill card. No presenter key (#96). The user added a campus background image.
 
 ## Run it
+- Other phones (#110): `npm run seat -- +1...` (prints the line to text), add to `TESTERS` in .env, restart the agent. `npm run seat -- list` / `release +1...`. Same flow as the demo phone; calendar is the stand-in.
 - Agent: `npm run start -w @syllabus-crew/agent` (127.0.0.1:8787; log line says "voice drills on/off"). Dashboard: `npm run dev -w @syllabus-crew/web` (localhost:3000). Both must be running; the user can ask Claude to start them.
 - Secrets only in `.env` and `.data/` (gitignored). Read .env by NAME only. Voice needs `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `ELEVENLABS_PHONE_NUMBER_ID` (all set), `PHOTON_VOICE_NUMBER=+16097854521`.
 - Controls: http://localhost:3000/demo (also linked from the dashboard header).
@@ -30,7 +32,7 @@ Details live in SPEC.md, PLAN.md, DECISIONS.md (108 numbered decisions), README.
 ## Not done yet (user's order)
 1. More product changes if the user lists any (cards, contact card, flow polish are done).
 2. Pitch deck (competitor slide with UpAhead, architecture, AWS stack: Bedrock live, DynamoDB built but blocked by the event account's org policy; voice drills; evidence from hacker interviews).
-3. Judge QR test with a second phone (LAST): a shared line only replies to assigned numbers (createSharedLineAssignment via Photon MCP, 25 seats). Expected: friend scans /join, sends "Hi Syllabus Crew", gets the intro and name question.
+3. No judge QR (#109, /join deleted). The demo runs on the builder's phone. A judge who wants to try it gets a seat added by hand (createSharedLineAssignment via Photon MCP), and then texts the line Photon assigns.
 4. Later: rotate the Photon outbound SIP password (it appeared in a screenshot in chat) and update ElevenLabs.
 - Rehearse the new PDF beat 1 of DEMO-SCRIPT.md again (runs 1-3 used the photo). No backup video (user decision).
 - DynamoDB: SKIPPED (#99): code works (`STORE=dynamo`), but an AWS Organizations service control policy denies DynamoDB on the event account.

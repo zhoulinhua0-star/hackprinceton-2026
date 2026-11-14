@@ -10,7 +10,8 @@
     "bedrock:smoke": "tsx --env-file=../../.env src/scripts/bedrock-smoke.ts",
     "parse": "tsx --env-file=../../.env src/scripts/parse-syllabus.ts",
     "questions": "tsx --env-file=../../.env src/scripts/write-questions.ts",
-    "dynamo:setup": "tsx --env-file=../../.env src/scripts/dynamo-setup.ts"
+    "dynamo:setup": "tsx --env-file=../../.env src/scripts/dynamo-setup.ts",
+    "seat": "tsx --env-file=../../.env src/scripts/seat.ts"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^1.1.2",

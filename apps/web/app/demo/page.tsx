@@ -61,7 +61,7 @@ export default function Demo() {
         ))}
       </div>
       <div className={`result${result ? " box" : ""}`} key={result} role="status">{result}</div>
-      <p className="nav"><a href="/">← Dashboard</a> · <a href="/upload">Upload a real syllabus</a> · <a href="/join">Join QR</a></p>
+      <p className="nav"><a href="/">← Dashboard</a> · <a href="/upload">Upload a real syllabus</a></p>
     </main>
   );
 }

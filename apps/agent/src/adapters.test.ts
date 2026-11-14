@@ -18,8 +18,13 @@ const photo = { ...text, id: "pho_msg_261y", content: { attachmentId: "pho_att_0
 test("toInbound: a human's text becomes an inbound with a route", () => {
   assert.deepEqual(toInbound(text), {
     messageId: "pho_msg_5116", studentId: "+15555550100", text: "Hello agent", hasImage: false,
-    route: { spaceId: "pho_spc_2stm", senderId: "pho_usr_0ce3" },
+    route: { spaceId: "pho_spc_2stm", senderId: "pho_usr_0ce3", line: "+16285023837" },
   });
+});
+
+test("toInbound: the route remembers which line they texted (seats can land on different lines); no handle, no line", () => {
+  assert.equal(toInbound({ ...text, receivedBy: { ...agent, handle: "+16095550199" } })!.route!.line, "+16095550199");
+  assert.equal(toInbound({ ...text, receivedBy: { id: "pho_usr_0ce3", kind: "agent" } })!.route!.line, undefined);
 });
 
 test("toInbound: a photo is flagged as an image", () => {

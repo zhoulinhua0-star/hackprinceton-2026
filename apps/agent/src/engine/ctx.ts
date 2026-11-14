@@ -71,6 +71,9 @@ export async function safeText(
   }
 }
 
+/** The line this student texts: the one their Photon seat landed on, else the configured line (DECISIONS #110). */
+export const lineFor = (deps: Deps, state: StudentState): string | undefined => state.route?.line ?? deps.opts.lineNumber;
+
 export const bypassFor = (deps: Deps, studentId: string): boolean =>
   deps.opts.bypassLimits === true || (Array.isArray(deps.opts.bypassLimits) && deps.opts.bypassLimits.includes(studentId));
 

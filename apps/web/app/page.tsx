@@ -238,7 +238,7 @@ export default function Home() {
       <Explorer name={name} />
       <footer className="foot">
         <span>Syllabus Crew · HackPrinceton Fall 2026</span>
-        <a href="/demo">Demo controls</a><a href="/upload">Upload a syllabus</a><a href="/join">Join QR</a>
+        <a href="/demo">Demo controls</a><a href="/upload">Upload a syllabus</a>
       </footer>
     </div>
   );

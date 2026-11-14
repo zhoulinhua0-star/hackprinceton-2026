@@ -1,7 +1,7 @@
 // The card snapshot, as the agent publishes it. Mirrors packages/core/src/cards.ts (this app is deployed on its own,
 // so it can't import the workspace package); the agent's tests check the shape it writes.
 export type CardKind = "semester" | "week" | "round" | "drill";
-interface Base { v: 1; kind: CardKind; agentName: string; tz: string; updatedAt: string }
+interface Base { v: 1; kind: CardKind; agentName: string; tz: string; updatedAt: string; /** The line Syl texts this student from (its own public number), for the page's reply buttons. */ line?: string }
 export interface SemesterCard extends Base {
   kind: "semester"; course: string; readAt?: string;
   items: { name: string; dateISO?: string; weight: number; topics?: string; done: boolean; isExam: boolean; focus: boolean }[];

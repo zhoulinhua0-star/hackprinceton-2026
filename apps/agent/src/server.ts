@@ -10,6 +10,7 @@ import { GoogleCalendar } from "./adapters/google.ts";
 import { BedrockLLM } from "./adapters/bedrock.ts";
 import { FileStore } from "./adapters/file-store.ts";
 import { DynamoStore, makeDynamo, tableName } from "./adapters/dynamo-store.ts";
+import { ElevenLabsCaller } from "./adapters/elevenlabs.ts";
 import { fetchAttachment, listen, makePhoton, PhotonMessenger } from "./adapters/photon.ts";
 import { Crew, readSyllabus } from "./index.ts";
 import type { Attachment } from "@syllabus-crew/core";
@@ -51,11 +52,17 @@ const calendarMode = () => (google.isConnected() ? "google" : "local");
 const calendar: CalendarWriter = calendarRouter({ google, local, owner: defaultStudent, log });
 const oauthStates = new Map<string, number>(); // state nonce -> expiry; only issued to a request holding the demo token
 
-const crew = new Crew({
+// Voice drills switch on when all three ElevenLabs values are in .env (they are never logged).
+const voiceNumber = process.env.PHOTON_VOICE_NUMBER || undefined;
+const caller = process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_AGENT_ID && process.env.ELEVENLABS_PHONE_NUMBER_ID
+  ? new ElevenLabsCaller({ apiKey: process.env.ELEVENLABS_API_KEY, agentId: process.env.ELEVENLABS_AGENT_ID, phoneNumberId: process.env.ELEVENLABS_PHONE_NUMBER_ID })
+  : undefined;
+
+const crew = new Crew({ caller,
   store, messenger, llm, calendar, clock: { now: () => new Date() }, tz,
   // Demo mode bypasses quiet hours and caps for the demo student only, never for strangers who scan the QR.
   // STAGED_PHOTO=false makes "read texted photos for real" the default; the /demo switch changes it while running.
-  opts: { bypassLimits: demoMode ? [defaultStudent] : false, dashboardUrl: env("DASHBOARD_URL", "http://localhost:3000"), stagedPhoto: process.env.STAGED_PHOTO !== "false" },
+  opts: { bypassLimits: demoMode ? [defaultStudent] : false, dashboardUrl: env("DASHBOARD_URL", "http://localhost:3000"), stagedPhoto: process.env.STAGED_PHOTO !== "false", voiceNumber },
 });
 
 const stop = listen({ photon, projectId, apiKey, log, onMessage: (m) => crew.onInbound(m.studentId, {
@@ -132,7 +139,7 @@ createServer(async (req, res) => {
   const student = url.searchParams.get("student") ?? defaultStudent;
   try {
     const route = `${req.method} ${url.pathname}`;
-    if (route === "GET /api/state") return send(200, { ...((await store.load(student)) ?? { phase: null }), calendarMode: calendarMode(), tz, scheduler: schedulerMode, stagedPhoto: crew.stagedPhoto, storeMode });
+    if (route === "GET /api/state") return send(200, { ...((await store.load(student)) ?? { phase: null }), calendarMode: calendarMode(), tz, scheduler: schedulerMode, stagedPhoto: crew.stagedPhoto, storeMode, voiceReady: !!caller, voiceNumber });
     if (route === "GET /api/google/status") return send(200, { connected: google.isConnected(), calendar: google.isConnected() ? await google.calendarInfo() : null });
     if (route === "POST /api/demo/scout") { const found = await crew.runScoutNow(student); return send(200, found ? { found } : { found, why: await crew.whyNoScout(student) }); }
     if (route === "POST /api/demo/quiz") return send(200, { sent: await crew.sendQuizNow(student) });
@@ -151,6 +158,8 @@ createServer(async (req, res) => {
       return send(200, { ok: true, actions: r?.actions ?? [] });
     }
     if (route === "POST /api/demo/staged") { crew.setStagedPhoto(url.searchParams.get("on") !== "0"); log(`texted photos: ${crew.stagedPhoto ? "staged" : "read for real"}`); return send(200, { ok: true, stagedPhoto: crew.stagedPhoto }); }
+    if (route === "POST /api/demo/drilloffer") return send(200, await crew.offerDrillNow(student));
+    if (route === "POST /api/demo/drill") { await crew.startDrillNow(student); return send(200, { ok: true }); }
     if (route === "POST /api/demo/hello") return send(200, await crew.startOnboarding(student));
     if (route === "POST /api/demo/reset") return send(200, { ok: true, ...(await crew.resetDemo(student)) });
     if (route === "POST /api/syllabus") {
@@ -183,7 +192,10 @@ createServer(async (req, res) => {
     log(`http error: ${String(e)}`);
     return send(500, { error: "internal error" });
   }
-}).listen(port, "127.0.0.1", () => log(`agent up: http://127.0.0.1:${port} (this machine only)  (demo mode ${demoMode ? "ON: quiet hours and caps bypassed" : "off"}; llm ${llm.constructor.name}; calendar ${calendarMode()}; scheduler ${schedulerMode})`));
+}).listen(port, "127.0.0.1", () => log(`agent up: http://127.0.0.1:${port} (this machine only)  (demo mode ${demoMode ? "ON: quiet hours and caps bypassed" : "off"}; llm ${llm.constructor.name}; calendar ${calendarMode()}; scheduler ${schedulerMode}; voice drills ${caller ? "on" : "off"})`));
+
+// ---- voice drills: check open calls every 5 s; a finished call is graded and recapped by text ----
+if (caller) setInterval(() => void crew.checkAllDrills().catch((e) => log(`drill check failed: ${String(e)}`)), 5000);
 
 // ---- the scheduler: once a minute, the real rules; texts only in "on" mode ----
 if (schedulerMode !== "off") {

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { DEFAULT_AGENT_NAME, daysUntil } from "@syllabus-crew/core";
-import type { Exam, Proposal, Topic } from "@syllabus-crew/core";
+import type { Drill, Exam, Proposal, Topic } from "@syllabus-crew/core";
 import { useLive, usePresenterKey, type View } from "@/lib/use-state";
 import { COLORS, Character, CrewTree, Explorer, agentOf, type AgentId } from "./crew";
 
@@ -81,6 +81,35 @@ function ProposalCard({ p, canAct, act }: { p: Proposal; canAct: boolean; act: (
   );
 }
 
+const mmss = (s = 0) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+
+/** The latest voice drill: ringing, or how it went (duration, what was covered and missed, the mastery change). */
+function DrillCard({ d, topic, name }: { d: Drill; topic?: Topic; name: string }) {
+  const label = topic?.short && topic.short !== topic.name ? topic.short : topic?.name ?? "this topic";
+  const pct = (v = 0.5) => `${Math.round(v * 100)}%`;
+  return (
+    <section className={`card drill enter ${d.status}`}>
+      <div className="drill-head">
+        <Character kind="tutor" size={48} />
+        <div>
+          <h3>Voice drill · {label}</h3>
+          <p className="drill-sub">{d.status === "calling" ? `${name} is calling…` : d.status === "done" ? `Call ended · ${mmss(d.durationSecs)}` : d.status === "missed" ? "Missed call" : "Call didn't go through"}</p>
+        </div>
+        {d.status === "done" && <div className="drill-score"><b>{pct(d.masteryBefore)} → {pct(d.masteryAfter)}</b>mastery</div>}
+      </div>
+      {d.status === "calling" && <div className="wave" aria-hidden="true">{Array.from({ length: 22 }, (_, i) => <i key={i} style={{ animationDelay: `${(i % 7) * 0.09}s` }} />)}</div>}
+      <p className="drill-q">“{d.question}”</p>
+      {d.status === "done" && (
+        <div className="drill-points">
+          {d.covered?.map((k) => <span key={k} className="hit">✓ {k}</span>)}
+          {d.missed?.map((k) => <span key={k} className="miss">○ {k}</span>)}
+        </div>
+      )}
+      {d.snippet && <p className="drill-snippet">You said: “{d.snippet}”</p>}
+    </section>
+  );
+}
+
 /** The live iMessage thread, in a phone. Each run of texts is labelled with the crew member that sent it. */
 function Thread({ v, name }: { v: View | null; name: string }) {
   const box = useRef<HTMLDivElement>(null);
@@ -135,6 +164,7 @@ export default function Home() {
         <a className="brand" href="/"><Character kind="lead" size={34} />Syllabus Crew</a>
         <div className="status">
           {view?.vibe && <span className="chip">Vibe: {view.vibe}</span>}
+          {view?.voiceReady && <span className="chip">Voice drills on</span>}
           {view?.storeMode === "dynamo" && <span className="chip">State: Amazon DynamoDB</span>}
           {view?.stagedPhoto === false && <span className="chip">Texted photos: read for real</span>}
           {view?.scheduler === "on" && <span className="chip">Nudges on</span>}
@@ -168,6 +198,7 @@ export default function Home() {
           ) : (
             <>
               {examCards.map((e) => <ExamCard key={e.id} exam={e} v={view!} />)}
+              {!!view!.drills?.length && <DrillCard d={view!.drills.at(-1)!} topic={view!.topics?.find((t) => t.id === view!.drills!.at(-1)!.topicId)} name={name} />}
               {proposals.some((p) => p.status === "pending") && (
                 <section className="card ask-card enter">
                   <h3>Needs your yes</h3>

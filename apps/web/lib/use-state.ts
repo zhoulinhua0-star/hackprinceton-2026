@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { Exam, Msg, Proposal, Topic, Course, Deadline } from "@syllabus-crew/core";
+import type { Exam, Msg, Proposal, Topic, Course, Deadline, Drill } from "@syllabus-crew/core";
 
 export interface View {
   phase: "day1" | "week6" | "live" | null;
@@ -11,7 +11,7 @@ export interface View {
   courses?: Course[]; exams?: Exam[]; topics?: Topic[];
   mastery?: Record<string, number>;
   proposals?: Proposal[]; messages?: Msg[];
-  stagedPhoto?: boolean; storeMode?: "file" | "dynamo"; agentName?: string; vibe?: "chill" | "strict" | "hype";
+  stagedPhoto?: boolean; voiceReady?: boolean; voiceNumber?: string; drills?: Drill[]; storeMode?: "file" | "dynamo"; agentName?: string; vibe?: "chill" | "strict" | "hype";
   foundMaterialIds?: string[]; pendingQuiz?: boolean; studentTail?: string; calendarMode?: "google" | "local"; tz?: string;
 }
 

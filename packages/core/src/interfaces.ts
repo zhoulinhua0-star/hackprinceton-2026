@@ -8,7 +8,7 @@ export interface Store {
   save(state: StudentState): Promise<void>;
 }
 
-export type LlmTask = "route" | "socratic" | "proposal" | "smalltalk" | "parse_syllabus" | "write_questions" | "verify_question";
+export type LlmTask = "route" | "socratic" | "proposal" | "smalltalk" | "parse_syllabus" | "write_questions" | "verify_question" | "write_drill" | "grade_drill";
 export interface Attachment { mediaType: "application/pdf" | "image/png" | "image/jpeg" | "image/webp" | "image/gif"; base64: string }
 export interface LLM {
   text(task: LlmTask, input: { system: string; user: string }): Promise<string>;
@@ -22,4 +22,14 @@ export interface CalendarWriter {
   createEvent(e: { title: string; startISO: string; endISO: string; key?: string; owner?: string }): Promise<{ id: string; link?: string }>;
   /** Used only by Reset demo, to remove events this agent created. */
   deleteEvent?(id: string): Promise<void>;
+}
+
+/** One line of a call transcript. */
+export interface CallLine { role: "agent" | "user"; text: string }
+/** Where a placed call stands. `pending` = still ringing, talking or being processed. */
+export interface CallStatus { state: "pending" | "done" | "failed"; durationSecs?: number; transcript?: CallLine[]; answered?: boolean }
+/** Places voice-drill phone calls (ElevenLabs over a Photon number). Behind an interface so tests use a fake. */
+export interface Caller {
+  placeCall(o: { to: string; variables: Record<string, string> }): Promise<{ callId: string }>;
+  getCall(callId: string): Promise<CallStatus>;
 }

@@ -1,4 +1,4 @@
-import type { CalendarWriter, Clock, LLM, LlmTask, Messenger, Store } from "./interfaces.ts";
+import type { CalendarWriter, Caller, CallStatus, Clock, LLM, LlmTask, Messenger, Store } from "./interfaces.ts";
 import type { StudentState } from "./types.ts";
 
 export class FakeMessenger implements Messenger {
@@ -51,4 +51,19 @@ export class FixedClock implements Clock {
   constructor(public t: Date) {}
   now() { return this.t; }
   advance(ms: number) { this.t = new Date(this.t.getTime() + ms); }
+}
+
+/** A phone line that never rings. `finish` decides what each call returns once it is checked. */
+export class FakeCaller implements Caller {
+  calls: { to: string; variables: Record<string, string>; callId: string }[] = [];
+  results = new Map<string, CallStatus>();
+  failPlace = false;
+  async placeCall(o: { to: string; variables: Record<string, string> }) {
+    if (this.failPlace) throw new Error("outbound call failed");
+    const callId = `call_${this.calls.length + 1}`;
+    this.calls.push({ ...o, callId });
+    return { callId };
+  }
+  async getCall(callId: string): Promise<CallStatus> { return this.results.get(callId) ?? { state: "pending" }; }
+  finish(callId: string, status: CallStatus) { this.results.set(callId, status); }
 }

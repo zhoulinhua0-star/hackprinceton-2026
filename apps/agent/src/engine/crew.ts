@@ -12,6 +12,8 @@ import { NUDGE_ROUND, tick } from "./nudger.ts";
 import type { TickOptions, TickResult } from "./nudger.ts";
 import { runScout } from "./scout.ts";
 import { moveProposal, proposeOnRequest } from "./planner.ts";
+import { finishDrill, gradeDrill, offerDrill, startDrill, timedOut, type Graded } from "./voice.ts";
+import type { CallStatus } from "@syllabus-crew/core";
 import { advanceSession, answerQuiz, renderQuiz, sendQuiz } from "./tutor.ts";
 import { day1State, stagedParse, week6State } from "../seed.ts";
 
@@ -103,8 +105,16 @@ export class Crew {
       if (reply.kind === "yes" && proposal) return approveProposal(ctx, this.calendar, proposal.id);
       if (reply.kind === "no" && proposal) return declineProposal(ctx, proposal.id);
 
+      // 1a-voice. CALL (or YES to a drill offer, or "drill me") starts a voice drill. Nothing rings without this.
+      const callOffer = state.pendingOffer?.kind === "call" ? state.pendingOffer : undefined;
+      if (!state.pendingQuiz && !proposal && (/^(call|call me|call me now|drill me|voice drill|ok call|yes,? call|start (the )?(voice )?drill)\W*$/i.test(text) || (callOffer && reply.kind === "yes"))) {
+        state.pendingOffer = undefined;
+        return startDrill(ctx, callOffer?.topicId);
+      }
+      if (callOffer && reply.kind === "no") { state.pendingOffer = undefined; return ctx.say("No problem. Text CALL whenever you want a voice drill.", "drill"); }
+
       // 1a. The agent asked "want a quick round?" on its own: YES starts it, NO drops it.
-      if (state.pendingOffer && !proposal && !state.pendingQuiz && (reply.kind === "yes" || reply.kind === "no")) {
+      if (state.pendingOffer?.kind === "round" && !proposal && !state.pendingQuiz && (reply.kind === "yes" || reply.kind === "no")) {
         const offer = state.pendingOffer;
         state.pendingOffer = undefined;
         if (reply.kind === "no") return ctx.say("No problem. I'll check in again another time.", "nudge");
@@ -356,6 +366,40 @@ export class Crew {
   async runScoutNow(id: string): Promise<boolean> {
     return this.run(id, async () => { const c = await this.open(id, false); return c ? runScout(c) : false; });
   }
+  // ---------- voice drills ----------
+  async offerDrillNow(id: string, force = true): Promise<{ sent: boolean; reason?: string }> {
+    return this.run(id, async () => { const c = await this.open(id, false); return c ? offerDrill(c, { force }) : { sent: false, reason: "this number hasn't texted the line" }; });
+  }
+  async startDrillNow(id: string): Promise<void> {
+    return this.run(id, async () => { const c = await this.open(id, false); if (c) await startDrill(c); });
+  }
+  /** Checks this student's drill calls; when one has ended, grades it (outside the lock) and texts the recap. */
+  async checkDrills(id: string): Promise<number> {
+    const caller = this.deps.caller;
+    if (!caller) return 0;
+    const calling = (await this.deps.store.load(id))?.drills?.filter((d) => d.status === "calling") ?? [];
+    let finished = 0;
+    for (const d of calling) {
+      let status: CallStatus;
+      try { status = await caller.getCall(d.callId!); } catch { status = { state: "pending" }; }
+      if (status.state === "pending") {
+        if (!timedOut(d, this.deps.clock.now())) continue;
+        status = { state: "failed", answered: true }; // never finished: tell the student, free the slot
+      }
+      let graded: Graded | undefined;
+      if (status.state === "done" && status.answered) graded = await gradeDrill(this.deps.llm, d, status);
+      await this.run(id, async () => { const c = await this.open(id, false); if (c) await finishDrill(c, d.id, status, graded); });
+      finished++;
+    }
+    return finished;
+  }
+  async checkAllDrills(): Promise<void> {
+    for (const id of await this.deps.store.ids()) {
+      const s = await this.deps.store.load(id);
+      if (s?.drills?.some((d) => d.status === "calling")) await this.checkDrills(id);
+    }
+  }
+
   /** Why Scout found nothing, in words the presenter can act on. */
   async whyNoScout(id: string): Promise<string> {
     const s = await this.deps.store.load(id);

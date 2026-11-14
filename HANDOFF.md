@@ -30,6 +30,9 @@ The student record is on the REAL syllabus (a humanities seminar; `seed/private/
 Reset demo -> text `seed/macro-syllabus.jpg` (any first image works; staged parse) -> Switch to Week 6 -> Run Scout now -> reply B -> (hint + proposal) -> reply YES -> check Google Calendar -> Reset demo. Run it 3 times in a row; record a backup video; test QuickTime mirroring on the projector.
 
 ## Not done yet (suggested order)
+- The summary text's dashboard link stays for now; the user wants it to become a hosted HTML page later (a phone cannot open localhost).
+- Voice drills: blocked until a card is on file in Photon (number purchase returned 402 ENTITLEMENT_REQUIRED, purchaseRefusal payment_method_required).
+- DynamoDB: SKIPPED (user decision). Code is built and tested but the event AWS account blocks DynamoDB with an organization service control policy (explicit deny), which no IAM policy can override. Say so honestly on the deck.
 1. Stage rehearsal x3 + a one-page demo script + backup video.
 2. Pitch: deck (competitor slide with the UpAhead screenshot, architecture, AWS stack, evidence from hacker interviews Saturday morning), README polish.
 3. DynamoDB store: BUILT (DECISIONS #99), switched on with `STORE=dynamo` after `npm run dynamo:setup -w @syllabus-crew/agent`. Needs the IAM user `hackprinceton` to have DynamoDB permissions on the `syllabus-crew-students` table. Textract/EventBridge need AWS deployment: show on the slide as the production plan.

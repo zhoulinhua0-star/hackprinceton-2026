@@ -11,6 +11,8 @@ const CONTROLS: { action: string; label: string; hint: string; danger?: boolean 
   { action: "questions", label: "Write quiz questions", hint: "For a real syllabus: writes and double-checks practice questions on the upcoming readings (about a minute)." },
   { action: "nudgedry", label: "Nudger: what would you do now? (dry run)", hint: "Applies the real rules (time window, daily limit, not mid-conversation) and shows the decision. Sends nothing." },
   { action: "nudge", label: "Run Nudger now", hint: "Skips the timing rules and sends the nudge that matters most right now, to show it live." },
+  { action: "drilloffer", label: "Offer a voice drill", hint: "Texts \"…want a 3-minute voice drill? Reply CALL.\" The phone rings only after the student replies CALL." },
+  { action: "drill", label: "Call now (voice drill)", hint: "Skips the offer and rings the demo phone straight away, for testing the call." },
   { action: "reset", label: "Reset demo", hint: "Back to Day 1: clears quiz state, proposals and mastery. The thread stays open.", danger: true },
 ];
 

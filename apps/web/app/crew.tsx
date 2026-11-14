@@ -10,7 +10,7 @@ const INK = "#1e2740";
 /** Which specialist sent a text, from the `kind` the agent records with every outbound message. */
 export function agentOf(kind?: string): AgentId {
   if (kind === "scout") return "scout";
-  if (kind === "quiz" || kind === "tutor") return "tutor";
+  if (kind === "quiz" || kind === "tutor" || kind === "drill") return "tutor";
   if (kind === "proposal" || kind === "approval") return "planner";
   if (kind === "nudge" || kind === "reminder") return "nudger";
   return "lead";
@@ -65,8 +65,8 @@ export function crewCopy(name: string): Record<AgentId, Member> {
       wont: ["Send email", "Delete or edit anything", "Post on your behalf"], sample: "Prof. Lee posted Week 6 slides. Added a few questions to your quiz." },
     tutor: { label: "Tutor", line: "Tutor asks before it tells.", sub: "Miss once and you get a question back, not the answer.",
       blurb: "Tutor quizzes you on what the exam actually covers, weakest topics first. Grading is code, not a guess.",
-      does: [["A / B / C by text", "Rounds of five, or one quick question."], ["Hint before answer", "Miss once and it asks a question back."], ["Tracks mastery", "Every answer moves the bar you see above."]],
-      wont: ["Reveal the answer on the first miss", "Send more than 3 unasked questions a day", "Let the model do the grading"], sample: "Not quite. When borrowing becomes more expensive, why would a business be more or less likely to take out a loan?" },
+      does: [["A / B / C by text", "Rounds of five, or one quick question."], ["Hint before answer", "Miss once and it asks a question back."], ["Voice drills", "Reply CALL and explain it out loud; the recap comes back by text."], ["Tracks mastery", "Every answer moves the bar you see above."]],
+      wont: ["Reveal the answer on the first miss", "Call you unless you reply CALL", "Let the model do the math on your score"], sample: "Not quite. When borrowing becomes more expensive, why would a business be more or less likely to take out a loan?" },
     planner: { label: "Planner", line: "Planner proposes. You decide.", sub: "Nothing reaches your calendar without your YES.",
       blurb: "Planner looks for weak topics on heavy exams and proposes study time. It can only propose.",
       does: [["Weighs the stakes", "A 25% exam beats a 2% quiz."], ["Proposes a slot", "A specific day and time, in one text."], ["Waits for YES", "Only your YES writes to Google Calendar."]],

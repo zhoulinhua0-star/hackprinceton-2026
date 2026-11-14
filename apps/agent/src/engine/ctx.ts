@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { Clock, LLM, LlmTask, Messenger, Store, StudentState } from "@syllabus-crew/core";
+import type { Caller, Clock, LLM, LlmTask, Messenger, Store, StudentState } from "@syllabus-crew/core";
 
 export interface Opts {
   /** Demo controls bypass quiet hours and daily caps. */
@@ -18,13 +18,15 @@ export interface Opts {
   stagedPhoto: boolean;
   /** How long to wait after the last texted page before reading, so a multi-page syllabus is read as one. */
   intakeWaitMs: number;
+  /** The number voice drills call from, as the student will see it ("+16097854521"). */
+  voiceNumber?: string;
 }
 
 /** Demo controls and the demo student bypass quiet hours and caps. `true` = everyone; a list = only those students. */
 export type Bypass = boolean | string[];
 
 /** What the Planner, Tutor and Scout may use. Deliberately has no calendar. */
-export interface Deps { store: Store; messenger: Messenger; llm: LLM; clock: Clock; tz: string; opts: Opts }
+export interface Deps { store: Store; messenger: Messenger; llm: LLM; clock: Clock; tz: string; opts: Opts; /** Voice drills; unset = not set up. */ caller?: Caller }
 
 export interface Ctx { deps: Deps; state: StudentState; say(text: string, kind?: string): Promise<void>; commit(): Promise<void> }
 

@@ -43,6 +43,27 @@ export interface Msg { dir: "in" | "out"; text: string; at: string; kind?: strin
 export interface Counters { day: string; quizzes: number; nudges: number }
 export interface Busy { startISO: string; endISO: string }
 
+/** A voice drill: one spoken "explain it in your own words" question on a phone call, graded against key points. */
+export interface Drill {
+  id: string;
+  topicId: string;
+  question: string;
+  keyPoints: string[];
+  status: "calling" | "done" | "missed" | "failed";
+  callId?: string;
+  startedAt: string;
+  endedAt?: string;
+  durationSecs?: number;
+  covered?: string[];
+  missed?: string[];
+  /** Fraction of key points covered, computed in code. */
+  score?: number;
+  masteryBefore?: number;
+  masteryAfter?: number;
+  /** A short piece of what the student said, for the dashboard. */
+  snippet?: string;
+}
+
 export interface StudentState {
   id: string;
   phase: Phase;
@@ -82,12 +103,14 @@ export interface StudentState {
   /** What the agent has sent on its own (nudges, morning quizzes, Scout), for backoff and "once a day" rules. */
   nudges?: NudgeRecord[];
   /** A yes/no question the agent asked on its own ("want a quick round?"). */
-  pendingOffer?: { kind: "round"; topicId?: string; expiresAt: string };
+  pendingOffer?: { kind: "round" | "call"; topicId?: string; expiresAt: string };
   prefs?: { mutedUntil?: string };
   /** Where the quiz-question writer is: none yet, working, done, or failed. */
   questionsStatus?: "generating" | "ready" | "failed";
   /** Questions the student skipped; never asked again. */
   skippedAsks?: string[];
+  /** Voice drills: spoken "explain it" calls, newest last. */
+  drills?: Drill[];
   /** What the student named their agent. Unset = the default name. */
   agentName?: string;
   /** How the agent talks (set phrases only). Unset = chill. */

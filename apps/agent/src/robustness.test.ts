@@ -127,7 +127,7 @@ test("only one proposal is open at a time, so YES/NO is never ambiguous", async 
   const store = new MemoryStore(), msg = new FlakyMessenger();
   const state = week6State(ME, NOON, true, TZ);
   state.mastery = { ch4: 0.3, ch5: 0.3, ch6: 0.8 };
-  const deps = { store, messenger: msg, llm: new FakeLLM(), clock: new FixedClock(NOON), tz: TZ, opts: { bypassLimits: false, dashboardUrl: "", proposalDelayMs: 0, llmTimeoutMs: 100, llmProposals: false, sessionLength: 5, nextQuestionDelayMs: 0 } };
+  const deps = { store, messenger: msg, llm: new FakeLLM(), clock: new FixedClock(NOON), tz: TZ, opts: { bypassLimits: false, dashboardUrl: "", proposalDelayMs: 0, llmTimeoutMs: 100, llmProposals: false, sessionLength: 5, nextQuestionDelayMs: 0, stagedPhoto: true, intakeWaitMs: 0 } };
   const ctx = makeCtx(deps, state);
   await onMasteryChange(ctx, "ch5");
   await onMasteryChange(ctx, "ch4");

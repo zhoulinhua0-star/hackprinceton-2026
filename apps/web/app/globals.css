@@ -1,4 +1,4 @@
-/* Study Desk: ruled cream paper, ink navy, one highlighter mark. */
+/* Study Desk: campus illustration, ink navy, one highlighter mark. */
 :root {
   --bg: #f3eee2; --card: #fffcf5; --ink: #1e2740; --muted: #5d6377; --line: #e0d8c6;
   --soft: #fbf1c9; --track: #ebe4d3; --panel: #e9e1cf; --tabs: #dcd3bd; --mark: #ffdf6b;
@@ -12,8 +12,25 @@
 * { box-sizing: border-box; }
 html { background: var(--bg); }
 body {
+  --campus-height: max(75vw, 750px, 100dvh);
+  --campus-wash: color-mix(in srgb, var(--bg) 45%, transparent);
+  min-height: 100dvh;
   margin: 0; color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased;
-  background: var(--bg) repeating-linear-gradient(to bottom, transparent 0 35px, rgba(30, 39, 64, .055) 35px 36px);
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--bg), var(--campus-wash) 14% 86%, var(--bg) calc(100% - 2px)),
+    url("/backgrounds/campus-commons.webp");
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: calc(var(--campus-height) * 4 / 3) var(--campus-height);
+}
+@media (max-width: 700px) {
+  body {
+    --campus-height: max(600px, 100dvh - 112px);
+    --campus-wash: color-mix(in srgb, var(--bg) 62%, transparent);
+    background-image: linear-gradient(var(--bg) 10%, var(--campus-wash) 55% 86%, var(--bg) calc(100% - 2px)),
+      url("/backgrounds/campus-commons.webp");
+    background-position: left 112px;
+  }
 }
 ::selection { background: var(--mark); color: var(--ink); }
 a { color: inherit; text-underline-offset: 3px; text-decoration-thickness: 1px; }

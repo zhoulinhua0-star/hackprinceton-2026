@@ -58,7 +58,7 @@ export function crewCopy(name: string): Record<AgentId, Member> {
     lead: { label: name, line: `You only ever text ${name}.`, sub: `${name} reads every message and decides who answers.`,
       blurb: `${name} is the one you text. It matches A/B/C and YES/NO in code first, then hands everything else to the right specialist.`,
       does: [["The one you text", "You never pick an agent. You just text."], ["Asks when it isn't sure", "An unclear reply gets a short question back, not a guess."], ["Named by you", "Call it whatever you like, and change it any time."]],
-      wont: ["Guess at a YES you didn't send", "Text between 11pm and 8am", "Pretend to know something it doesn't"], sample: `I'm ${name}, your personal agent from Syllabus Crew. Send me a photo of your syllabus and I'll take it from there.` },
+      wont: ["Guess at a YES you didn't send", "Text between 11pm and 8am", "Pretend to know something it doesn't"], sample: `I'm ${name}, your personal agent from Syllabus Crew. Send me your syllabus as a PDF and I'll take it from there.` },
     scout: { label: "Scout", line: "Scout notices what changed.", sub: "New slides, a moved exam. It only reads.",
       blurb: "Scout watches for anything new: slides posted, an exam that moved. It only reads.",
       does: [["Spots changes", "New slides become new quiz questions."], ["Tells you once", "One short text, then the Tutor takes over."], ["Counts toward the daily limit", "Three proactive texts a day, total."]],

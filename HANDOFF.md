@@ -1,6 +1,6 @@
 # Handoff: where the project stands
 
-Read this first when resuming. Last updated at commit 68bbd93 (Nov 14, ~1:30 AM ET). 182 tests pass (`npm test -w @syllabus-crew/core -w @syllabus-crew/agent`).
+Read this first when resuming. Last updated at commit 68bbd93 (Nov 14, ~1:30 AM ET). 189 tests pass (`npm test -w @syllabus-crew/core -w @syllabus-crew/agent`).
 Details live in SPEC.md, PLAN.md, DECISIONS.md (92+ numbered decisions), README.md, CLAUDE.md (hard rules).
 
 ## What is built and confirmed on the real iPhone
@@ -11,6 +11,7 @@ Details live in SPEC.md, PLAN.md, DECISIONS.md (92+ numbered decisions), README.
 - Scheduler + Nudger: pure policy in packages/core/src/nudger.ts; reminders ("remind me Sunday to ..."), morning quiz, stakes-scaled nudges with YES/NO, pause/stop/resume. Scheduler runs in DRY mode by default.
 - Dashboard (Next.js): exam cards, mastery bars, timeline, proposals, reminders, thread, /demo controls, /upload, /join (QR).
 - Naming + vibe (tests only, NOT yet tried on the real iPhone): the student names the agent, picks chill / strict / hype, answers one question; rename and vibe change any time. Default name is `DEFAULT_AGENT_NAME` in packages/core/src/naming.ts ("Syl", chosen by the user).
+- A texted PDF syllabus is read for real, always (confirmed on the real iPhone with a real PDF; DECISIONS #97-98). A texted photo is still the staged Macro shortcut for the stage demo.
 - "Say hello" control on /demo: the agent texts first (DECISIONS #94).
 - New look ("Study Desk", DECISIONS #95): characters, phone-framed thread with sender labels, scroll-revealed crew tree, "Meet the crew" tabs.
 

@@ -9,7 +9,7 @@ import { calendarRouter } from "./adapters/calendar-router.ts";
 import { GoogleCalendar } from "./adapters/google.ts";
 import { BedrockLLM } from "./adapters/bedrock.ts";
 import { FileStore } from "./adapters/file-store.ts";
-import { listen, makePhoton, PhotonMessenger } from "./adapters/photon.ts";
+import { fetchAttachment, listen, makePhoton, PhotonMessenger } from "./adapters/photon.ts";
 import { Crew, readSyllabus } from "./index.ts";
 import type { Attachment } from "@syllabus-crew/core";
 
@@ -48,10 +48,17 @@ const oauthStates = new Map<string, number>(); // state nonce -> expiry; only is
 const crew = new Crew({
   store, messenger, llm, calendar, clock: { now: () => new Date() }, tz,
   // Demo mode bypasses quiet hours and caps for the demo student only, never for strangers who scan the QR.
-  opts: { bypassLimits: demoMode ? [defaultStudent] : false, dashboardUrl: env("DASHBOARD_URL", "http://localhost:3000") },
+  // STAGED_PHOTO=false makes "read texted photos for real" the default; the /demo switch changes it while running.
+  opts: { bypassLimits: demoMode ? [defaultStudent] : false, dashboardUrl: env("DASHBOARD_URL", "http://localhost:3000"), stagedPhoto: process.env.STAGED_PHOTO !== "false" },
 });
 
-const stop = listen({ photon, projectId, apiKey, log, onMessage: (m) => crew.onInbound(m.studentId, { text: m.text, hasImage: m.hasImage, route: m.route }) });
+const stop = listen({ photon, projectId, apiKey, log, onMessage: (m) => crew.onInbound(m.studentId, {
+  text: m.text, hasImage: m.hasImage, route: m.route,
+  file: m.attachmentId ? async () => {
+    try { const a = await fetchAttachment(photon, projectId, m.attachmentId!); log(`attachment ${m.attachmentId}: ${a ? a.mediaType : "not a readable file"}`); return a; }
+    catch (e) { log(`attachment download failed: ${String(e)}`); return null; }
+  } : undefined,
+}) });
 
 const MEDIA = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp", "image/gif"]);
 const MAX_BODY = 25 * 1024 * 1024;
@@ -119,7 +126,7 @@ createServer(async (req, res) => {
   const student = url.searchParams.get("student") ?? defaultStudent;
   try {
     const route = `${req.method} ${url.pathname}`;
-    if (route === "GET /api/state") return send(200, { ...((await store.load(student)) ?? { phase: null }), calendarMode: calendarMode(), tz, scheduler: schedulerMode });
+    if (route === "GET /api/state") return send(200, { ...((await store.load(student)) ?? { phase: null }), calendarMode: calendarMode(), tz, scheduler: schedulerMode, stagedPhoto: crew.stagedPhoto });
     if (route === "GET /api/google/status") return send(200, { connected: google.isConnected(), calendar: google.isConnected() ? await google.calendarInfo() : null });
     if (route === "POST /api/demo/scout") return send(200, { found: await crew.runScoutNow(student) });
     if (route === "POST /api/demo/quiz") return send(200, { sent: await crew.sendQuizNow(student) });
@@ -137,6 +144,7 @@ createServer(async (req, res) => {
       const r = await crew.tickStudent(student, { force: url.searchParams.get("force") === "1", dryRun: url.searchParams.get("dry") === "1" });
       return send(200, { ok: true, actions: r?.actions ?? [] });
     }
+    if (route === "POST /api/demo/staged") { crew.setStagedPhoto(url.searchParams.get("on") !== "0"); log(`texted photos: ${crew.stagedPhoto ? "staged" : "read for real"}`); return send(200, { ok: true, stagedPhoto: crew.stagedPhoto }); }
     if (route === "POST /api/demo/hello") return send(200, await crew.startOnboarding(student));
     if (route === "POST /api/demo/reset") return send(200, { ok: true, ...(await crew.resetDemo(student)) });
     if (route === "POST /api/syllabus") {

@@ -154,3 +154,68 @@ test("uploading the same syllabus twice is recognised (so the caller can skip th
   await s.crew.resetDemo(ME);
   assert.equal(await s.crew.hasSyllabus(ME, "abc"), false); // reset clears it, so the same file can be loaded again
 });
+
+// ---- a syllabus texted as photos or a PDF (the staged-photo switch off) ----
+const PAGE = (n: number) => async () => ({ mediaType: "image/jpeg" as const, base64: `page-${n}` });
+function realRead(json: unknown = SYLLABUS) {
+  const s = setup();
+  const llm = new FakeLLM(); llm.jsonByTask.parse_syllabus = json;
+  const crew = new Crew({ store: s.store, messenger: s.messenger, llm, calendar: s.calendar, clock: s.clock, tz: TZ, opts: { proposalDelayMs: 0, nextQuestionDelayMs: 0, stagedPhoto: false, intakeWaitMs: 60_000 } });
+  return { ...s, crew, llm };
+}
+
+test("texted pages are acknowledged once, read together, and installed as the student's semester", async () => {
+  const s = realRead();
+  await s.crew.onInbound(ME, { hasImage: true, route: ROUTE, file: PAGE(1) });
+  await s.crew.onInbound(ME, { hasImage: true, route: ROUTE, file: PAGE(2) });
+  assert.deepEqual(s.texts(), ["Got it, reading your syllabus. Give me about 20 seconds."]);
+  assert.equal(await s.crew.readIntake(ME), "installed");
+  const st = (await s.store.load(ME))!;
+  assert.equal(st.phase, "live");
+  assert.equal(st.courses[0]!.name, "ECON 201");
+  assert.match(s.texts()[1]!, /ECON 201/);
+  assert.equal(s.llm.calls.filter((c) => c.task === "parse_syllabus").length, 1); // both pages in one read
+  assert.equal(await s.crew.readIntake(ME), "none"); // nothing left to read
+});
+
+test("the same file again changes nothing; a photo that is not a syllabus changes nothing", async () => {
+  const s = realRead();
+  await s.crew.onInbound(ME, { hasImage: true, route: ROUTE, file: PAGE(1) });
+  await s.crew.readIntake(ME);
+  await s.crew.onInbound(ME, { hasImage: true, route: ROUTE, file: PAGE(1) });
+  assert.equal(await s.crew.readIntake(ME), "duplicate");
+  assert.equal(s.last(), "That's the syllabus I already have, so nothing changed.");
+
+  const bad = realRead({ nonsense: true });
+  await bad.crew.onInbound(ME, { hasImage: true, route: ROUTE, file: PAGE(1) });
+  assert.equal(await bad.crew.readIntake(ME), "unreadable");
+  assert.match(bad.last(), /couldn't find a syllabus/);
+  assert.equal((await bad.store.load(ME))!.phase, "day1");
+
+  const gone = realRead();
+  await gone.crew.onInbound(ME, { hasImage: true, route: ROUTE, file: async () => null });
+  assert.equal(await gone.crew.readIntake(ME), "unreadable");
+  assert.match(gone.last(), /couldn't open that file/);
+});
+
+test("with the staged switch on (the default), a texted photo still loads the stored Macro syllabus at once", async () => {
+  const s = setup();
+  await s.crew.onInbound(ME, { hasImage: true, route: ROUTE, file: PAGE(1) });
+  assert.match(s.last(), /^Got it\. Exam 2 is 25%/);
+  assert.equal(await s.crew.readIntake(ME), "none");
+});
+
+test("a texted PDF is read for real even with the staged switch on; extra photos get one reply, not one each", async () => {
+  const s = setup();
+  const llm = new FakeLLM(); llm.jsonByTask.parse_syllabus = SYLLABUS;
+  const crew = new Crew({ store: s.store, messenger: s.messenger, llm, calendar: s.calendar, clock: s.clock, tz: TZ, opts: { proposalDelayMs: 0, nextQuestionDelayMs: 0, intakeWaitMs: 60_000 } });
+  await crew.onInbound(ME, { hasImage: true, route: ROUTE, file: async () => ({ mediaType: "application/pdf", base64: "pdf-bytes" }) });
+  assert.equal(s.last(), "Got it, reading your syllabus. Give me about 20 seconds.");
+  assert.equal(await crew.readIntake(ME), "installed");
+  assert.equal((await s.store.load(ME))!.courses[0]!.name, "ECON 201");
+
+  const p = setup();
+  for (let i = 0; i < 4; i++) await p.crew.onInbound(ME, { hasImage: true, route: ROUTE, file: PAGE(i) });
+  assert.equal(p.texts().length, 1); // the staged summary only: the three extra photos are not answered one by one
+  assert.match(p.texts()[0]!, /^Got it\. Exam 2 is 25%/);
+});

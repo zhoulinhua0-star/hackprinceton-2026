@@ -14,6 +14,10 @@ export interface Opts {
   sessionLength: number;
   /** Pause before the next question arrives, so it reads like a person typing. */
   nextQuestionDelayMs: number;
+  /** Stage demo: a texted photo loads the stored Macro syllabus instantly instead of being read. */
+  stagedPhoto: boolean;
+  /** How long to wait after the last texted page before reading, so a multi-page syllabus is read as one. */
+  intakeWaitMs: number;
 }
 
 /** Demo controls and the demo student bypass quiet hours and caps. `true` = everyone; a list = only those students. */

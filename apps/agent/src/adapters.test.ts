@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { FakeMessenger } from "@syllabus-crew/core";
 import { day1State, week6State } from "./seed.ts";
 import { FileStore } from "./adapters/file-store.ts";
-import { findMessages, toInbound } from "./adapters/photon.ts";
+import { findMessages, sniff, toAttachment, toInbound } from "./adapters/photon.ts";
 
 // Shapes copied from real events logged on the live line (ids shortened).
 const space = { id: "pho_spc_2stm", kind: "direct", participantIds: [] };
@@ -68,4 +68,26 @@ test("FileStore returns copies, not live references", async () => {
   x.phase = "week6";
   assert.equal((await st.load("+1"))!.phase, "day1");
   void FakeMessenger;
+});
+
+test("toInbound keeps the attachment id of a texted file", () => {
+  assert.equal(toInbound(photo)!.attachmentId, "pho_att_0h6y");
+  assert.equal("attachmentId" in toInbound(text)!, false);
+});
+
+test("sniff tells a PDF, the image types and an iPhone HEIC apart by their first bytes", () => {
+  const bytes = (s: string, pad = 16) => Buffer.concat([Buffer.from(s, "latin1"), Buffer.alloc(pad)]);
+  assert.equal(sniff(bytes("%PDF-1.7")), "application/pdf");
+  assert.equal(sniff(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0])), "image/jpeg");
+  assert.equal(sniff(bytes("\x89PNG\r\n")), "image/png");
+  assert.equal(sniff(bytes("GIF89a")), "image/gif");
+  assert.equal(sniff(bytes("RIFF\0\0\0\0WEBP")), "image/webp");
+  assert.equal(sniff(bytes("\0\0\0\x18ftypheic")), "heic");
+  assert.equal(sniff(bytes("hello, not a file")), null);
+});
+
+test("toAttachment passes a small PDF through and refuses unknown bytes", async () => {
+  const pdf = Buffer.from("%PDF-1.7 tiny");
+  assert.deepEqual(await toAttachment(pdf), { mediaType: "application/pdf", base64: pdf.toString("base64") });
+  assert.equal(await toAttachment(Buffer.from("just some text")), null);
 });

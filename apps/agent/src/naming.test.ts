@@ -23,7 +23,7 @@ test("first text: the agent introduces itself, takes a name, then a vibe", async
   await s.say("hype");
   assert.equal(s.last(), "Hype it is. Let's go! Last one: which class worries you most this semester?");
   await s.say("Macro, honestly");
-  assert.equal(s.last(), "Noted. Text me a photo of that syllabus and I'll take it from there.");
+  assert.equal(s.last(), "Noted. Text me that syllabus as a PDF and I'll take it from there.");
   const st = (await s.store.load(ME))!;
   assert.equal(st.agentName, "Juno");
   assert.equal(st.vibe, "hype");
@@ -42,7 +42,7 @@ test("the agent can text first, but only into a thread it already has", async ()
   assert.equal(s.msg.sent.length, before + 1);
   assert.match(s.last(), /personal agent from Syllabus Crew[\s\S]*what do you want to call me/i);
   await s.say("Juno"); await s.say("skip"); await s.say("skip");
-  assert.equal(s.last(), "No problem. Text me a photo of a syllabus and I'll take it from there.");
+  assert.equal(s.last(), "No problem. Text me a syllabus as a PDF and I'll take it from there.");
   assert.equal((await s.store.load(ME))!.vibe, "chill");
 });
 

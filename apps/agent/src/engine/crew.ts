@@ -2,7 +2,9 @@ import { isAmbiguous, isDontKnow, isHintRequest, isUnsure, parseReply, rankTopic
 import { describe, DEFAULT_AGENT_NAME, PRODUCT_NAME, isNameQuestion, parseNameAnswer, parseRename, parseVibe, parseVibeCommand, voice } from "@syllabus-crew/core";
 import { writeQuestions } from "./questions.ts";
 import type { TopicJob } from "./questions.ts";
-import type { CalendarWriter, ParsedSyllabus, StudentState } from "@syllabus-crew/core";
+import { createHash } from "node:crypto";
+import type { Attachment, CalendarWriter, ParsedSyllabus, StudentState } from "@syllabus-crew/core";
+import { readSyllabus } from "./syllabus.ts";
 import { approveProposal, declineProposal, pendingProposal } from "./approve.ts";
 import { bypassFor, makeCtx, safeText, type Ctx, type Deps, type Opts } from "./ctx.ts";
 import { askNext, refresh, tryAnswerAsk, needsAnswer } from "./onboarding.ts";
@@ -13,11 +15,17 @@ import { advanceSession, answerQuiz, renderQuiz, sendQuiz } from "./tutor.ts";
 import { day1State, stagedParse, week6State } from "../seed.ts";
 
 export interface CrewDeps extends Omit<Deps, "opts"> { calendar: CalendarWriter; opts?: Partial<Opts> }
-export interface Inbound { text?: string; hasImage?: boolean; route?: { spaceId: string; senderId: string } }
+export interface Inbound {
+  text?: string; hasImage?: boolean; route?: { spaceId: string; senderId: string };
+  /** Fetches the texted file (a photo or a PDF) when it is actually needed. Null = not a readable file. */
+  file?: () => Promise<Attachment | null>;
+}
+type FileLoader = NonNullable<Inbound["file"]>;
+const MAX_PAGES = 12;
 
 /** Most texts one sender may send per hour before the agent stops answering (a flood guard for the public QR code). */
 const MAX_INBOUND_PER_HOUR = 40;
-const DEFAULTS: Opts = { bypassLimits: false, dashboardUrl: "http://localhost:3000", proposalDelayMs: 2000, llmTimeoutMs: 4000, llmProposals: false, sessionLength: 5, nextQuestionDelayMs: 1500 };
+const DEFAULTS: Opts = { bypassLimits: false, dashboardUrl: "http://localhost:3000", proposalDelayMs: 2000, llmTimeoutMs: 4000, llmProposals: false, sessionLength: 5, nextQuestionDelayMs: 1500, stagedPhoto: true, intakeWaitMs: 6000 };
 
 /** Crew Lead: the one thing the student talks to. Routes to Scout / Tutor / Planner and enforces reply matching in code. */
 export class Crew {
@@ -25,6 +33,7 @@ export class Crew {
   private calendar: CalendarWriter; // only ever passed to approveProposal
   private locks = new Map<string, Promise<unknown>>();
   private inboundLog = new Map<string, number[]>();
+  private intake = new Map<string, { files: FileLoader[]; timer?: ReturnType<typeof setTimeout> }>();
 
   constructor(d: CrewDeps) {
     const { calendar, opts, ...rest } = d;
@@ -33,6 +42,8 @@ export class Crew {
   }
 
   setBypass(on: boolean | string[]) { this.deps.opts.bypassLimits = on; }
+  setStagedPhoto(on: boolean) { this.deps.opts.stagedPhoto = on; }
+  get stagedPhoto(): boolean { return this.deps.opts.stagedPhoto; }
 
   private rateLimited(id: string): boolean {
     const now = this.deps.clock.now().getTime();
@@ -72,7 +83,7 @@ export class Crew {
       await ctx.commit();
 
       if (state.pendingOffer && new Date(state.pendingOffer.expiresAt).getTime() <= this.deps.clock.now().getTime()) state.pendingOffer = undefined;
-      if (msg.hasImage) return this.onImage(ctx);
+      if (msg.hasImage) return this.onImage(ctx, msg.file);
       const text = (msg.text ?? "").trim();
       // 0. First contact: the agent says who it is and asks for a name, then a vibe. Anything that isn't an answer falls through.
       if (state.pendingName && (await this.onNaming(ctx, text))) return;
@@ -200,7 +211,7 @@ export class Crew {
     state.pendingName = undefined;
     if (isCommand || parseRename(text) || parseVibeCommand(text) || isNameQuestion(text) || !text) return false;
     if (!passed) state.focusCourse = text.replace(/\s+/g, " ").slice(0, 60);
-    const next = state.parsed ? "I'll keep an eye on it." : `Text me a photo of ${passed ? "a" : "that"} syllabus and I'll take it from there.`;
+    const next = state.parsed ? "I'll keep an eye on it." : `Text me ${passed ? "a" : "that"} syllabus as a PDF and I'll take it from there.`;
     await ctx.say(`${passed ? "No problem." : "Noted."} ${next}`, "naming");
     return true;
   }
@@ -253,9 +264,15 @@ export class Crew {
     return out;
   }
 
-  private async onImage(ctx: Ctx): Promise<void> {
+  private async onImage(ctx: Ctx, file?: FileLoader): Promise<void> {
     const { state, deps } = ctx;
     state.pendingName = undefined; // a photo instead of a name: keep the default name and get to work
+    if (file && !deps.opts.stagedPhoto) return this.collect(ctx, file);
+    if (file) {
+      // A PDF is always read for real. Only photos take the staged shortcut. A slow or failed download counts as a photo.
+      const loaded = await Promise.race([file().catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 3000).unref?.())]);
+      if (loaded?.mediaType === "application/pdf") return this.collect(ctx, async () => loaded);
+    }
     if (state.phase === "day1" && !state.parsed) {
       // Staged: the stored parse for the demo syllabus photo, not Textract + the LLM.
       const p = stagedParse(deps.clock.now(), deps.tz);
@@ -263,13 +280,50 @@ export class Crew {
       await ctx.say(`${p.summary} Here's your semester: ${deps.opts.dashboardUrl}`, "onboarding");
       return;
     }
-    return ctx.say("Got the photo. I can't read slide photos yet, so I'll stick to your syllabus topics for now.", "photo");
+    // Several photos sent together get one reply, not one each.
+    const last = [...state.messages].reverse().find((m) => m.dir === "out");
+    if (last?.kind === "photo" || (last?.kind === "onboarding" && deps.clock.now().getTime() - new Date(last.at).getTime() < 60_000)) return;
+    return ctx.say("Got the photo. I can't read photos yet, so send your syllabus as a PDF and I'll read that.", "photo");
+  }
+
+  // ---------- a syllabus texted as photos or a PDF ----------
+  /** Pages arrive as separate texts: acknowledge the first, then wait for a quiet moment and read them together. */
+  private async collect(ctx: Ctx, file: FileLoader): Promise<void> {
+    const id = ctx.state.id;
+    let job = this.intake.get(id);
+    if (!job) {
+      job = { files: [] };
+      this.intake.set(id, job);
+      await ctx.say("Got it, reading your syllabus. Give me about 20 seconds.", "onboarding");
+    }
+    if (job.files.length < MAX_PAGES) job.files.push(file);
+    clearTimeout(job.timer);
+    job.timer = setTimeout(() => void this.readIntake(id).catch(() => {}), this.deps.opts.intakeWaitMs);
+    job.timer.unref?.();
+  }
+
+  /** Reads what was collected and installs it. The slow download and model call run outside the per-student lock. */
+  async readIntake(id: string): Promise<"installed" | "duplicate" | "unreadable" | "none"> {
+    const job = this.intake.get(id);
+    if (!job) return "none";
+    clearTimeout(job.timer);
+    this.intake.delete(id);
+    const tell = (text: string) => this.run(id, async () => { const c = await this.open(id, false); if (c) await c.say(text, "onboarding"); });
+    const pages = (await Promise.all(job.files.map((f) => f().catch(() => null)))).filter((a): a is Attachment => !!a);
+    if (!pages.length) { await tell("I couldn't open that file. Send the syllabus as a photo of each page, or as a PDF."); return "unreadable"; }
+    const hash = createHash("sha256").update(pages.map((a) => a.base64).join("|")).digest("hex");
+    if (await this.hasSyllabus(id, hash)) { await tell("That's the syllabus I already have, so nothing changed."); return "duplicate"; }
+    const read = await readSyllabus(this.deps.llm, pages, this.deps.tz, this.deps.clock.now());
+    if (!read.ok) { await tell("I couldn't find a syllabus in that, so nothing changed. Try a clearer photo of each page, or send the PDF."); return "unreadable"; }
+    if (!(await this.applySyllabus(id, read.parsed, hash))) return "none";
+    void this.startQuestions(id, { announce: true }).catch(() => {});
+    return "installed";
   }
 
   private focusSummary(state: StudentState): string {
     const now = this.deps.clock.now();
     const top = rankTopics(state, now, this.deps.tz)[0];
-    if (!top) return "Send me a photo of your syllabus and I'll tell you what to focus on.";
+    if (!top) return "Send me your syllabus as a PDF and I'll tell you what to focus on.";
     const topic = state.topics.find((t) => t.id === top.topicId)!;
     const exam = state.exams.find((e) => e.topicIds.includes(top.topicId))!;
     const pct = Math.round((state.mastery[top.topicId] ?? 0.5) * 100);
@@ -304,7 +358,7 @@ export class Crew {
       const state = day1State(id, true);
       state.route = prev.route;
       state.messages = prev.messages;
-      state.agentName = prev.agentName; state.vibe = prev.vibe; // the name belongs to the thread, not the semester
+      state.agentName = prev.agentName; state.vibe = prev.vibe; state.focusCourse = prev.focusCourse; // the name belongs to the thread, not the semester
       state.phase = "live"; state.parsed = true; state.syllabus = parsed; state.syllabusHash = hash;
       const ctx = makeCtx(this.deps, state);
       const { patch, missing } = refresh(state, this.deps.tz);

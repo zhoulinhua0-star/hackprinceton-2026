@@ -135,6 +135,7 @@ export default function Home() {
         <a className="brand" href="/"><Character kind="lead" size={34} />Syllabus Crew</a>
         <div className="status">
           {view?.vibe && <span className="chip">Vibe: {view.vibe}</span>}
+          {view?.stagedPhoto === false && <span className="chip">Texted photos: read for real</span>}
           {view?.scheduler === "on" && <span className="chip">Nudges on</span>}
           {view?.scheduler === "dry" && <span className="chip">Nudges: dry run</span>}
           {view?.calendarMode && <span className="chip">{view.calendarMode === "google" ? "Google Calendar connected" : "Calendar: local"}</span>}
@@ -148,8 +149,8 @@ export default function Home() {
       {offline && <div className="offline">The dashboard can't reach the agent. Check that it is running.</div>}
       {!parsed && (
         <section className="hero enter">
-          <h1>Text <em>{name}</em> a photo of your syllabus.</h1>
-          <p>That's the whole setup. It reads the syllabus, quizzes you by text, and asks before it adds anything to your calendar.</p>
+          <h1>Text <em>{name}</em> your syllabus.</h1>
+          <p>A PDF is all it needs. It reads the syllabus, quizzes you by text, and asks before it adds anything to your calendar.</p>
         </section>
       )}
       <main className="grid">

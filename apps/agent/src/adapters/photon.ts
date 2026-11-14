@@ -1,12 +1,17 @@
 // Photon 2.0 (beta) iMessage adapter. Inbound: WebSocket + a polling safety net. Outbound: sendMessage.
 // Verified against the real line: no typing indicator on a shared line; photos arrive as an attachmentId.
 import { randomUUID } from "node:crypto";
+import { execFile } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
 import { Photon } from "@photon-ai/api";
 import { io } from "socket.io-client";
-import type { Messenger, Store } from "@syllabus-crew/core";
+import type { Attachment, Messenger, Store } from "@syllabus-crew/core";
 import type { Inbound } from "../engine/crew.ts";
 
-export interface PhotonInbound extends Inbound { messageId: string; studentId: string; createdAt?: string }
+export interface PhotonInbound extends Inbound { messageId: string; studentId: string; createdAt?: string; attachmentId?: string }
 
 /** Pick a human's direct-chat iMessage out of a Photon message object. Anything else returns undefined. */
 export function toInbound(m: any): PhotonInbound | undefined {
@@ -22,6 +27,7 @@ export function toInbound(m: any): PhotonInbound | undefined {
     studentId: m.sentBy.handle,
     text: type === "text" ? m.content.text : undefined,
     hasImage: type === "attachment",
+    ...(type === "attachment" && typeof m.content.attachmentId === "string" ? { attachmentId: m.content.attachmentId } : {}),
     route: { spaceId: m.space.id, senderId: m.receivedBy.id },
   };
 }
@@ -48,6 +54,40 @@ export class PhotonMessenger implements Messenger {
       body: { spaceId: route.spaceId, senderId: route.senderId, content: { type: "text", format: "plain", text } } as any,
     });
   }
+}
+
+/** What a file is, from its first bytes (iMessage does not reliably say). `heic` is what iPhones send; the model can't read it. */
+export function sniff(b: Uint8Array): Attachment["mediaType"] | "heic" | null {
+  const at = (i: number, s: string) => s.split("").every((c, k) => b[i + k] === c.charCodeAt(0));
+  if (at(0, "%PDF")) return "application/pdf";
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  if (b[0] === 0x89 && at(1, "PNG")) return "image/png";
+  if (at(0, "GIF8")) return "image/gif";
+  if (at(0, "RIFF") && at(8, "WEBP")) return "image/webp";
+  if (at(4, "ftyp") && ["heic", "heix", "hevc", "heim", "heis", "mif1", "msf1"].some((brand) => at(8, brand))) return "heic";
+  return null;
+}
+
+const MAX_IMAGE = 3_500_000, MAX_PDF = 20_000_000;
+/** Turns downloaded bytes into something the model can read, or null. HEIC and oversized photos become a 2000px JPEG (macOS `sips`). */
+export async function toAttachment(buf: Buffer): Promise<Attachment | null> {
+  const kind = sniff(buf);
+  if (!kind) return null;
+  if (kind === "application/pdf") return buf.length <= MAX_PDF ? { mediaType: kind, base64: buf.toString("base64") } : null;
+  if (kind !== "heic" && buf.length <= MAX_IMAGE) return { mediaType: kind, base64: buf.toString("base64") };
+  const dir = await mkdtemp(join(tmpdir(), "crew-img-"));
+  try {
+    const src = join(dir, "in"), out = join(dir, "out.jpg");
+    await writeFile(src, buf);
+    await promisify(execFile)("sips", ["-s", "format", "jpeg", "-Z", "2000", src, "--out", out], { timeout: 20_000 });
+    return { mediaType: "image/jpeg", base64: (await readFile(out)).toString("base64") };
+  } catch { return null; } finally { await rm(dir, { recursive: true, force: true }); }
+}
+
+/** Downloads what the student texted (a photo or a PDF). Null when it can't be fetched or isn't a readable type. */
+export async function fetchAttachment(photon: Photon, projectId: string, attachmentId: string): Promise<Attachment | null> {
+  const blob = await photon.projects.downloadAttachment({ path: { id: projectId, attachmentId } } as any);
+  return toAttachment(Buffer.from(await (blob as Blob).arrayBuffer()));
 }
 
 /** A message from well before this process started: ignore it instead of acting on it. */

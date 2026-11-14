@@ -248,7 +248,7 @@ test("asking for study time makes a real proposal; a new time moves it; YES book
   assert.match(s.last()!, /^You already have one waiting/);
   await s.crew.onInbound(ME, { text: "yes" });
   assert.equal(s.calendar.events.length, 1);
-  assert.match(s.last()!, /^Done\. Monday, Nov 16, 2:00/);
+  assert.ok(s.msg.sent.slice(-2).some((t) => /^Done\. Monday, Nov 16, 2:00/.test(t))); // then the follow-up (#108)
 });
 
 test("a named topic and time are used: 'schedule chapter 4 review tuesday 3pm'", async () => {

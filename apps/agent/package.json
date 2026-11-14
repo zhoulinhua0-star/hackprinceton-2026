@@ -17,6 +17,7 @@
     "@aws-sdk/client-dynamodb": "^3.1169.0",
     "@photon-ai/api": "^0.6.0",
     "@syllabus-crew/core": "*",
+    "@vercel/blob": "^2.9.0",
     "socket.io-client": "^4.8.4"
   },
   "devDependencies": {

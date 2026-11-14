@@ -31,7 +31,7 @@ export async function sendCard(ctx: Ctx): Promise<boolean> {
     return false;
   }
   state.cardFor = `${name}|${state.vibe ?? "chill"}`;
-  state.messages.push({ dir: "out", text: `[contact card: ${name}]`, at: deps.clock.now().toISOString(), kind: "card" });
+  state.messages.push({ dir: "out", text: `[contact card: ${name}]`, at: deps.clock.now().toISOString(), kind: "contact-card" });
   await ctx.commit();
   return true;
 }

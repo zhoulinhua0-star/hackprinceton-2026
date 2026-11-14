@@ -7,6 +7,8 @@ export interface Messenger {
   sendFile?(studentId: string, file: OutFile): Promise<void>;
 }
 export interface Clock { now(): Date }
+/** Where tap-to-open cards are published (Vercel Blob in production). `put` returns the public page URL. */
+export interface CardStore { put(id: string, card: unknown): Promise<string> }
 export interface Store {
   ids(): Promise<string[]>;
   load(id: string): Promise<StudentState | undefined>;
@@ -16,7 +18,8 @@ export interface Store {
 export type LlmTask = "route" | "socratic" | "proposal" | "smalltalk" | "parse_syllabus" | "write_questions" | "verify_question" | "write_drill" | "grade_drill";
 export interface Attachment { mediaType: "application/pdf" | "image/png" | "image/jpeg" | "image/webp" | "image/gif"; base64: string }
 export interface LLM {
-  text(task: LlmTask, input: { system: string; user: string }): Promise<string>;
+  /** `images`: screenshots the student sent alongside the text (JPEG/PNG/WebP), shown to the model with it. */
+  text(task: LlmTask, input: { system: string; user: string; images?: Attachment[] }): Promise<string>;
   /** Reads documents/images and returns JSON that matches `schema` (forced tool call). The caller still validates it. */
   extractJson(task: LlmTask, input: { system: string; user: string; attachments: Attachment[]; toolName: string; schema: object }): Promise<unknown>;
 }

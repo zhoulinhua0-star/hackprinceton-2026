@@ -55,7 +55,9 @@ test("the demo loop: photo, Scout, quiz, wrong answer, proposal, YES -> calendar
   const ev = s.calendar.events[0]!;
   assert.equal(weekdayName(new Date(ev.startISO), TZ), "Tuesday");
   assert.equal(new Date(ev.endISO).getTime() - new Date(ev.startISO).getTime(), 30 * 60_000);
-  assert.equal(s.last(), "Done. Tuesday, Nov 17, 4:00-4:30, chapter 5 review.");
+  const tail = s.messenger.texts();
+  assert.equal(tail.at(-2), "Done. Tuesday, Nov 17, 4:00-4:30, chapter 5 review.");
+  assert.match(tail.at(-1)!, /^Back to the question:\n\nQuick one on chapter 5/); // then straight back to the open question (#108)
   assert.equal((await s.store.load(ME))!.proposals[0]!.status, "approved");
 });
 
@@ -81,8 +83,10 @@ test("a right answer raises mastery and proposes nothing", async () => {
   const s = setup();
   await toQuiz(s);
   await s.crew.onInbound(ME, { text: "a" });
-  assert.match(s.last()!, /^Correct!/);
+  assert.match(s.messenger.texts().at(-2)!, /^Correct!/);
+  assert.match(s.last()!, /^(\d+ more are|One more is) ready( on .+)?\. Want (them|it)\? Reply YES\.$/); // a one-off question offers the rest
   const st = (await s.store.load(ME))!;
+  assert.equal(st.pendingOffer?.kind, "round");
   assert.equal(st.mastery.ch5, 0.65);
   assert.equal(st.proposals.length, 0);
 });

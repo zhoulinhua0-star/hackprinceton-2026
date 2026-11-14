@@ -43,9 +43,19 @@ export function findMessages(node: unknown, out: any[] = []): any[] {
   return out;
 }
 
+const GAP_MS = 900;
+
 export class PhotonMessenger implements Messenger {
   constructor(private photon: Photon, private projectId: string, private store: Store, private apiKey = "") {}
+  /** Two texts sent back to back can arrive swapped on the phone (seen on the real line). Keep a short gap per thread. */
+  private last = new Map<string, number>();
+  private async spaced(studentId: string) {
+    const wait = (this.last.get(studentId) ?? 0) + GAP_MS - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    this.last.set(studentId, Date.now());
+  }
   async send(studentId: string, text: string) {
+    await this.spaced(studentId);
     const route = (await this.store.load(studentId))?.route;
     if (!route) throw new Error(`no Photon route for ${studentId}: they have not texted the line yet`);
     await this.photon.projects.sendMessage({
@@ -57,6 +67,7 @@ export class PhotonMessenger implements Messenger {
 
   /** Upload, then send as an attachment. The upload is multipart/related: a JSON part, then the bytes (verified against the API). */
   async sendFile(studentId: string, file: OutFile) {
+    await this.spaced(studentId);
     const route = (await this.store.load(studentId))?.route;
     if (!route) throw new Error(`no Photon route for ${studentId}: they have not texted the line yet`);
     if (!this.apiKey) throw new Error("no Photon API key for uploads");

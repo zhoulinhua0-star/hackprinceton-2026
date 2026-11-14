@@ -134,8 +134,10 @@ test("the agent never starts a round on its own: Scout-style quizzes are single 
   assert.doesNotMatch(s.last(), /^Question \d of/);
   assert.match(s.last(), /^Quick one · /);
   await s.crew.onInbound(ME, { text: (await pending(s)).right });
-  assert.match(s.last(), /^Correct! /); // and nothing after it
+  assert.match(s.texts().at(-2)!, /^Correct! /);
+  assert.match(s.last(), /^(\d+ more are|One more is) ready( on .+)?\. Want (them|it)\? Reply YES\.$/); // an offer, not a question: nothing starts without a YES
   assert.equal((await s.store.load(ME))!.session, undefined);
+  assert.equal((await s.store.load(ME))!.pendingQuiz, undefined);
 });
 
 test("natural ways of asking for more start a round when nothing is open", async () => {
@@ -164,12 +166,11 @@ test("'I don't know' is a miss: a hint the first time, the answer the second, th
   const topic = first.questions.find((q) => q.id === first.pendingQuiz!.questionId)!.topicId;
   const before = first.mastery[topic] ?? 0.5;
   await s.crew.onInbound(ME, { text: "I do not know" });
-  assert.match(s.texts().at(-2)!, /^Not quite\. Think about /); // the hint, not small talk (a study-block proposal follows it)
-  assert.match(s.last(), /Reply YES or NO\.$/);
+  assert.match(s.last(), /^Not quite\. Think about /); // the hint, not small talk; no proposal mid-round (#108)
   const mid = (await s.store.load(ME))!;
   assert.equal(mid.pendingQuiz!.attempts, 1);
   assert.ok((mid.mastery[topic] ?? 0.5) < before); // it counted as a miss
-  await s.crew.onInbound(ME, { text: "idk" }); // a proposal is waiting, but "idk" is about the question
+  await s.crew.onInbound(ME, { text: "idk" });
   assert.match(s.texts().at(-2)!, /^The answer is [ABC]\) /);
   assert.match(s.last(), /^Question 2 of 5 · /);
 });
@@ -204,16 +205,15 @@ test("'idk' right after a hint is giving up: the answer is revealed and the roun
   await s.crew.onInbound(ME, { text: "hint" });
   assert.match(s.last(), /^Hint: /);
   await s.crew.onInbound(ME, { text: "idk" });
-  const tail = s.texts().slice(-3); // the reveal, then the study-block proposal it triggers, then the next question
+  const tail = s.texts().slice(-2); // the reveal, then the next question (the Planner waits for the recap, #108)
   assert.match(tail[0]!, /^The answer is [ABC]\) /);
-  assert.match(tail[1]!, /Reply YES or NO\.$/);
-  assert.match(tail[2]!, /^Question 2 of 5 · /);
+  assert.match(tail[1]!, /^Question 2 of 5 · /);
   assert.equal(s.texts().filter((t) => /^Not quite/.test(t)).length, 0); // never a second hint
 });
 
 test("'not sure' while a proposal is waiting is about the proposal, not the quiz", async () => {
   const s = await setup();
-  await s.crew.onInbound(ME, { text: "quiz me" });
+  await s.crew.sendQuizNow(ME); // a single question: proposals never come mid-round
   await s.crew.onInbound(ME, { text: (await pending(s)).wrong }); // a miss: hint, and a proposal follows
   assert.match(s.last(), /Reply YES or NO\.$/);
   await s.crew.onInbound(ME, { text: "not sure" });
@@ -229,7 +229,7 @@ test("'I don't know' with no question open is ordinary chat", async () => {
 
 test("'skip' with a question AND a proposal open skips the question, not the proposal", async () => {
   const s = await setup();
-  await s.crew.onInbound(ME, { text: "quiz me" });
+  await s.crew.sendQuizNow(ME); // a single question: proposals never come mid-round
   await s.crew.onInbound(ME, { text: (await pending(s)).wrong }); // a miss: hint + a study-block proposal is now waiting
   assert.match(s.last(), /Reply YES or NO\.$/);
   const before = (await s.store.load(ME))!;
@@ -237,17 +237,16 @@ test("'skip' with a question AND a proposal open skips the question, not the pro
   const after = (await s.store.load(ME))!;
   assert.ok(after.askedQuestionIds.includes(before.pendingQuiz!.questionId)); // the question was skipped
   assert.equal(after.proposals.find((p) => p.status === "pending")?.id, before.proposals.find((p) => p.status === "pending")!.id); // the proposal is still waiting
-  assert.match(s.last(), /^Question 2 of 5 · /);
+  assert.equal(s.last(), "Skipped.");
   await s.crew.onInbound(ME, { text: "no" }); // NO answers the proposal
   assert.equal((await s.store.load(ME))!.proposals.some((p) => p.status === "pending"), false);
 });
 
 test("'skip' with only a proposal waiting declines it", async () => {
   const s = await setup();
-  await s.crew.onInbound(ME, { text: "quiz me" });
+  await s.crew.sendQuizNow(ME);
   await s.crew.onInbound(ME, { text: (await pending(s)).wrong });
-  await s.crew.onInbound(ME, { text: "stop" }); // leave the round; the question stays open
   const st = (await s.store.load(ME))!; st.pendingQuiz = undefined; await s.store.save(st); // answered elsewhere: only the proposal is left
   await s.crew.onInbound(ME, { text: "skip" });
-  assert.equal(s.last(), "No problem, I won't add it.");
+  assert.ok(s.texts().includes("No problem, I won't add it.")); // then the follow-up (#108)
 });

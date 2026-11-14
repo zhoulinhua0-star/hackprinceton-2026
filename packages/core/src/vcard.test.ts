@@ -24,3 +24,14 @@ test("contact card: special characters are escaped, no drill number twice, no ph
   assert.equal(cardFilename("Juno ✨"), "Juno.vcf");
   assert.equal(cardFilename("🙂"), "Syl.vcf");
 });
+
+import { weekCard } from "./cards.ts";
+import type { Proposal, StudentState } from "./types.ts";
+test("week card: a booked Google event gets its calendar link; the local stand-in never does", () => {
+  const state = { topics: [{ id: "t", courseId: "c", name: "Ch. 5: Rates", short: "ch. 5" }], exams: [], deadlines: [], busy: [], mastery: { t: 0.3 } } as unknown as StudentState;
+  const p = (link?: string, status: Proposal["status"] = "approved") => ({ id: "p", status, topicId: "t", label: "ch. 5 review", text: "", createdAt: "", event: { title: "", startISO: "2026-11-17T21:00:00Z", endISO: "2026-11-17T21:30:00Z" }, ...(link ? { calendarLink: link } : {}) }) as Proposal;
+  const now = new Date("2026-11-14T12:00:00Z");
+  assert.equal(weekCard(state, p("https://www.google.com/calendar/event?eid=abc"), "America/New_York", now).calendarUrl, "https://www.google.com/calendar/event?eid=abc");
+  assert.equal(weekCard(state, p("local://event/1"), "America/New_York", now).calendarUrl, undefined);
+  assert.equal(weekCard(state, p("https://www.google.com/calendar/event?eid=abc", "pending"), "America/New_York", now).calendarUrl, undefined);
+});

@@ -12,7 +12,7 @@
 ## Architecture
 A student texts one agent, **Crew Lead**, in one iMessage thread (Photon 2.0 beta). Four specialists work behind it. A Next.js dashboard mirrors the state.
 
-- **Crew Lead:** receives every inbound message. It **first matches replies in code** against the student's single pending item (A/B/C → Tutor, YES/NO → Planner proposal; unclear → clarifying text). Otherwise one cheap LLM call routes the message to Scout / Tutor / Planner / Nudger, or Crew Lead answers directly. No typing indicator on the shared line (DECISIONS #39); for slow replies send a short "On it" text.
+- **Crew Lead:** receives every inbound message. It **first matches replies in code** against the student's single pending item (A/B/C → Tutor, YES/NO → Planner proposal; unclear → clarifying text). Otherwise code matches commands (quiz me, hint, book/move a study block, remind me, pause, rename, CALL) to Scout / Tutor / Planner / Nudger; anything else gets one cheap LLM reply from Crew Lead. No typing indicator on the shared line (DECISIONS #39); for slow replies send a short "On it" text.
 - **Scout:** fetches the iCal feed (node-ical), detects changes, and passes slides/photos to the Tutor. **Read-only.**
 - **Tutor:** A/B/C quizzes graded in code, Socratic follow-up on the first miss, reveal after 2 misses. Tracks mastery per topic. Picks topics by priority score.
 - **Planner:** spots crunch weeks and weak, high-stakes topics. **Only tool that changes anything: `createProposal`.** It has no calendar tool.

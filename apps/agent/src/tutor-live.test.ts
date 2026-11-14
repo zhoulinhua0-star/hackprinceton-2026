@@ -123,6 +123,9 @@ test("'quiz me' with no questions starts the writer, then the quiz uses the read
   await until(async () => /practice questions/.test(s.last()));
   await s.crew.onInbound(ME, { text: "quiz me" });
   assert.match(s.last(), /^Question 1 of 5 · Reading [ABC]\n\nWhat is the main idea of Reading [ABC], part \d\?\n\nA\) .*\nB\) .*\nC\) .*\n\nStuck\? Just text "hint"/);
+  await s.crew.onInbound(ME, { text: "stop" }); // proposals never come mid-round (#108): continue with a single question
+  await s.crew.sendQuizNow(ME);
+  assert.match(s.last(), /^Quick one · Reading [ABC]\n\n/);
 
   const st = (await s.store.load(ME))!;
   const q = st.questions.find((x) => x.id === st.pendingQuiz!.questionId)!;
@@ -132,7 +135,8 @@ test("'quiz me' with no questions starts the writer, then the quiz uses the read
   assert.doesNotMatch(s.texts().at(-2)!, /Right Reading/);
   assert.match(s.last(), /^Essay #3 is 30% and Reading [ABC] is your weak spot\. Want me to add 30 minutes of review on \w+day, \w{3} \d{1,2}\? Reply YES or NO\.$/);
   await s.crew.onInbound(ME, { text: "YES" });
-  assert.match(s.last(), /^Done\. \w+day, \w{3} \d{1,2}, \d:\d\d-\d:\d\d, Reading [ABC] review\.$/);
+  assert.ok(s.texts().slice(-3).some((t) => /^Done\. \w+day, \w{3} \d{1,2}, \d:\d\d-\d:\d\d, Reading [ABC] review\.$/.test(t)));
+  assert.match(s.last(), /^Back to the question:/); // then straight back to studying
   assert.equal(s.calendar.events.length, 1);
   assert.match(s.calendar.events[0]!.title, /^LIT 101: Reading [ABC] review$/); // the short course name, not the long title
 });
@@ -187,7 +191,7 @@ test("proposals and calendar titles use the short reading name, not the raw page
   await s.crew.onInbound(ME, { text: "Hi", route: ROUTE });
   await s.crew.applySyllabus(ME, named);
   await s.crew.generateQuestions(ME);
-  await s.crew.onInbound(ME, { text: "quiz me" });
+  await s.crew.sendQuizNow(ME); // a single question: proposals never come mid-round (#108)
   const st = (await s.store.load(ME))!;
   const q = st.questions.find((x) => x.id === st.pendingQuiz!.questionId)!;
   await s.crew.onInbound(ME, { text: (["A", "B", "C"] as const).find((l) => l !== q.correct)! });

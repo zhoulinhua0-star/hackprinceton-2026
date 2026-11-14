@@ -20,6 +20,7 @@ After Reset, press **Say hello** on `/demo`. The agent introduces itself and ask
 | 4 | Reply **B** (the wrong answer) | Socratic hint, not the answer; mastery bar drops on the dashboard | "Wrong answer. It asks a question back instead of telling me. Grading and mastery math are code, not the model." |
 | 5 | Read the proposal text | Study block proposal with times, "reply YES" | "Weak topic plus a heavy exam, so it proposes study time. It cannot touch my calendar on its own." |
 | 6 | Reply **YES** | Confirmation text; Google Calendar event appears | "Only my YES writes to the calendar. There it is." |
+|   | (after YES) | "Done." + the booked card, then "Back to the question:" with the open quiz (#108) | "And it picks the conversation back up. It never leaves you hanging." |
 | 7 | Show dashboard (exam card, mastery, timeline) | Mastery bars, proposal approved | "Same state, mirrored for a human." |
 
 Close (10 sec): "Photon for the iMessage line, Claude on Amazon Bedrock, Google Calendar on approval. It reads real syllabi, follows rule-bound nudges, and never texts a student who hasn't texted first."

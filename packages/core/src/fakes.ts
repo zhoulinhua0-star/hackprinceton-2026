@@ -1,4 +1,4 @@
-import type { CalendarWriter, Caller, CallStatus, Clock, LLM, LlmTask, Messenger, OutFile, Store } from "./interfaces.ts";
+import type { Attachment, CalendarWriter, Caller, CallStatus, CardStore, Clock, LLM, LlmTask, Messenger, OutFile, Store } from "./interfaces.ts";
 import type { StudentState } from "./types.ts";
 
 export class FakeMessenger implements Messenger {
@@ -12,7 +12,7 @@ export class FakeMessenger implements Messenger {
 
 /** Returns canned text per task; "" (the default) makes agents use their built-in fallback wording. */
 export class FakeLLM implements LLM {
-  calls: { task: LlmTask; user: string }[] = [];
+  calls: { task: LlmTask; user: string; images?: number }[] = [];
   json: unknown = undefined;
   /** Per-task JSON answers; a function receives the prompt text. Falls back to `json`. */
   jsonByTask: Partial<Record<LlmTask, unknown | ((user: string) => unknown)>> = {};
@@ -23,8 +23,8 @@ export class FakeLLM implements LLM {
     const v = task in this.jsonByTask ? this.jsonByTask[task] : this.json;
     return typeof v === "function" ? (v as (u: string) => unknown)(input.user) : v;
   }
-  async text(task: LlmTask, input: { system: string; user: string }) {
-    this.calls.push({ task, user: input.user });
+  async text(task: LlmTask, input: { system: string; user: string; images?: Attachment[] }) {
+    this.calls.push({ task, user: input.user, ...(input.images?.length ? { images: input.images.length } : {}) });
     if (this.fail) throw new Error("LLM unavailable");
     const c = this.canned[task];
     return typeof c === "function" ? c() : (c ?? "");
@@ -68,4 +68,10 @@ export class FakeCaller implements Caller {
   }
   async getCall(callId: string): Promise<CallStatus> { return this.results.get(callId) ?? { state: "pending" }; }
   finish(callId: string, status: CallStatus) { this.results.set(callId, status); }
+}
+
+/** Keeps published cards in memory; URLs look like the real ones. `fail` makes every put throw. */
+export class FakeCardStore implements CardStore {
+  cards = new Map<string, unknown>(); fail = false;
+  async put(id: string, card: unknown) { if (this.fail) throw new Error("card store down"); this.cards.set(id, structuredClone(card)); return `https://cards.test/c/${id}`; }
 }

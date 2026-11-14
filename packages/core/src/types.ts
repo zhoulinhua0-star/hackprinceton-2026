@@ -97,7 +97,11 @@ export interface StudentState {
   /** The question the agent is waiting on (one at a time). */
   pendingAsk?: { missing: Missing; tries: number };
   /** A practice round the student asked for: questions keep coming after each answer until `total` are done. */
-  session?: { total: number; asked: number; answered: number; firstTry: number; topicIds: string[] };
+  session?: {
+    total: number; asked: number; answered: number; firstTry: number; topicIds: string[];
+    /** For the round card: each question's first answer, mastery when each topic entered the round, and the start time. */
+    log?: { questionId: string; firstTry: boolean; chose?: Choice | "unknown" }[]; start?: Record<string, number>; startedAt?: string;
+  };
   /** Reminders the student asked for ("remind me Sunday to start the essay"). Always delivered. */
   reminders?: Reminder[];
   /** What the agent has sent on its own (nudges, morning quizzes, Scout), for backoff and "once a day" rules. */
@@ -115,6 +119,8 @@ export interface StudentState {
   agentName?: string;
   /** How the agent talks (set phrases only). Unset = chill. */
   vibe?: "chill" | "strict" | "hype";
+  /** Tap-to-open card links already sent (DECISIONS #106), so an update reuses the same link. */
+  cards?: { semester?: string; weeks?: Record<string, string> };
   /** The name|vibe the last contact card showed, so a rename or vibe change sends a fresh one. */
   cardFor?: string;
   /** First-contact questions still open: the name, then the vibe, then the class they worry about most. */

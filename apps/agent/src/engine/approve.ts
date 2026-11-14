@@ -3,6 +3,8 @@
 import { clock, dayDate } from "@syllabus-crew/core";
 import type { CalendarWriter } from "@syllabus-crew/core";
 import type { Ctx } from "./ctx.ts";
+import { refreshWeek, resendWeek } from "./cards.ts";
+import { followUp } from "./tutor.ts";
 
 export const pendingProposal = (ctx: Ctx) => [...ctx.state.proposals].reverse().find((p) => p.status === "pending");
 
@@ -23,6 +25,8 @@ export async function approveProposal(ctx: Ctx, calendar: CalendarWriter, propos
   await ctx.commit();
   const start = new Date(p.event.startISO), end = new Date(p.event.endISO), tz = ctx.deps.tz;
   await ctx.say(`Done. ${dayDate(start, tz)}, ${clock(start, tz)}-${clock(end, tz)}, ${p.label}.`, "approval");
+  await resendWeek(ctx, p); // the payoff: the same card again, now solid and "Booked"
+  await followUp(ctx, p.topicId); // then back to studying
 }
 
 export async function declineProposal(ctx: Ctx, proposalId: string): Promise<void> {
@@ -30,4 +34,6 @@ export async function declineProposal(ctx: Ctx, proposalId: string): Promise<voi
   if (!p || p.status !== "pending") return;
   p.status = "declined";
   await ctx.say("No problem, I won't add it.", "approval");
+  await refreshWeek(ctx, p);
+  await followUp(ctx, p.topicId); // a NO is not the end of the conversation
 }

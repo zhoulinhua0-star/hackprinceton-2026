@@ -11,6 +11,7 @@ import { BedrockLLM } from "./adapters/bedrock.ts";
 import { FileStore } from "./adapters/file-store.ts";
 import { DynamoStore, makeDynamo, tableName } from "./adapters/dynamo-store.ts";
 import { ElevenLabsCaller } from "./adapters/elevenlabs.ts";
+import { VercelCards } from "./adapters/vercel-cards.ts";
 import { fetchAttachment, listen, makePhoton, PhotonMessenger } from "./adapters/photon.ts";
 import { Crew, readSyllabus } from "./index.ts";
 import type { Attachment } from "@syllabus-crew/core";
@@ -58,7 +59,9 @@ const caller = process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_AGENT_ID
   ? new ElevenLabsCaller({ apiKey: process.env.ELEVENLABS_API_KEY, agentId: process.env.ELEVENLABS_AGENT_ID, phoneNumberId: process.env.ELEVENLABS_PHONE_NUMBER_ID })
   : undefined;
 
-const crew = new Crew({ caller,
+// Tap-to-open cards switch on when the Blob token and the card site's URL are in .env (DECISIONS #106).
+const cards = process.env.BLOB_READ_WRITE_TOKEN && process.env.CARDS_URL ? new VercelCards({ token: process.env.BLOB_READ_WRITE_TOKEN, siteUrl: process.env.CARDS_URL }) : undefined;
+const crew = new Crew({ caller, cards,
   store, messenger, llm, calendar, clock: { now: () => new Date() }, tz,
   // Demo mode bypasses quiet hours and caps for the demo student only, never for strangers who scan the QR.
   // STAGED_PHOTO=false makes "read texted photos for real" the default; the /demo switch changes it while running.
@@ -192,7 +195,7 @@ createServer(async (req, res) => {
     log(`http error: ${String(e)}`);
     return send(500, { error: "internal error" });
   }
-}).listen(port, "127.0.0.1", () => log(`agent up: http://127.0.0.1:${port} (this machine only)  (demo mode ${demoMode ? "ON: quiet hours and caps bypassed" : "off"}; llm ${llm.constructor.name}; calendar ${calendarMode()}; scheduler ${schedulerMode}; voice drills ${caller ? "on" : "off"})`));
+}).listen(port, "127.0.0.1", () => log(`agent up: http://127.0.0.1:${port} (this machine only)  (demo mode ${demoMode ? "ON: quiet hours and caps bypassed" : "off"}; llm ${llm.constructor.name}; calendar ${calendarMode()}; scheduler ${schedulerMode}; voice drills ${caller ? "on" : "off"}; cards ${cards ? "on" : "off"})`));
 
 // ---- voice drills: check open calls every 5 s; a finished call is graded and recapped by text ----
 if (caller) setInterval(() => void crew.checkAllDrills().catch((e) => log(`drill check failed: ${String(e)}`)), 5000);

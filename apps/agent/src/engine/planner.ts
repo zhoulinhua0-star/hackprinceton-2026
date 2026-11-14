@@ -3,6 +3,7 @@
 import { dayDate, daysUntil, parseWhen, pickSlot, rankTopics, topicLabel } from "@syllabus-crew/core";
 import type { Proposal } from "@syllabus-crew/core";
 import { safeText, sleep, type Ctx } from "./ctx.ts";
+import { resendWeek, sendLink, weekLink } from "./cards.ts";
 
 const WEAK = 0.5;
 
@@ -52,6 +53,7 @@ export async function proposeOnRequest(ctx: Ctx, text: string): Promise<void> {
   };
   state.proposals.push(proposal); // createProposal, as always: nothing is booked until YES
   try { await ctx.say(proposal.text, "proposal"); } catch (e) { state.proposals = state.proposals.filter((p) => p.id !== proposal.id); throw e; }
+  await sendLink(ctx, await weekLink(ctx, proposal)); // the week, with the block in it
 }
 
 /** "make it Wednesday at 5pm" while a proposal is waiting: move it and ask again. Returns false if the text isn't a new time. */
@@ -66,6 +68,7 @@ export async function moveProposal(ctx: Ctx, text: string): Promise<boolean> {
   const when = `${dayDate(at, deps.tz)}, ${clockText(p.event.startISO, deps.tz)}-${clockText(p.event.endISO, deps.tz)}`;
   p.text = `Moved: ${when}, ${p.label}. Reply YES to book it, or NO.`;
   await ctx.say(p.text, "proposal");
+  await resendWeek(ctx, p); // a fresh picture with the new time
   return true;
 }
 
@@ -76,6 +79,12 @@ export async function onMasteryChange(ctx: Ctx, topicId: string): Promise<void> 
   if (mastery >= WEAK) return;
   if (state.proposals.some((p) => p.status === "pending")) return; // one open proposal at a time, so YES/NO is never ambiguous
   if (state.proposals.some((p) => p.topicId === topicId && p.status !== "declined")) return; // one proposal per topic
+  // Never mid-round: inside a round the proposal waits for the recap. (A single question may still prompt one;
+  // after YES/NO the open question comes straight back, see tutor.followUp.)
+  if (state.session) return;
+  // A NO stands for a day: the same topic is not proposed again right away.
+  const now0 = deps.clock.now().getTime();
+  if (state.proposals.some((p) => p.topicId === topicId && p.status === "declined" && now0 - new Date(p.createdAt).getTime() < 24 * 3_600_000)) return;
 
   const exam = state.exams.find((e) => e.topicIds.includes(topicId));
   const topic = state.topics.find((t) => t.id === topicId);
@@ -109,5 +118,6 @@ export async function onMasteryChange(ctx: Ctx, topicId: string): Promise<void> 
     await ctx.commit();
     throw e;
   }
+  await sendLink(ctx, await weekLink(ctx, proposal));
 }
 

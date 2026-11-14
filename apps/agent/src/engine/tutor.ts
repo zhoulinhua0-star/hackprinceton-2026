@@ -2,6 +2,8 @@ import { canSend, gradeChoice, rankTopics, rollCounters, topicLabel, updateMaste
 import type { Choice, Question } from "@syllabus-crew/core";
 import { bypassFor, safeText, sleep, type Ctx } from "./ctx.ts";
 import { onMasteryChange } from "./planner.ts";
+import { roundLink, sendLink } from "./cards.ts";
+import { NUDGE_ROUND } from "./nudger.ts";
 
 /**
  * The quiz text. Written questions get a clean layout (progress header, the question, one choice per line). The
@@ -20,6 +22,8 @@ export function renderQuiz(ctx: Ctx, q: Question): string {
   }
   const exam = state.exams.find((e) => e.topicIds.includes(q.topicId));
   const when = exam ? ` before ${weekdayName(new Date(exam.date), deps.tz)}` : "";
+  // Inside a round, say so: "Quick one" on every question made a round look like stray single questions.
+  if (state.session) return `Question ${state.session.asked} of ${state.session.total} · ${topic?.short ?? "your course"}${when}\n\n${q.prompt}\nA) ${q.choices.A}  B) ${q.choices.B}  C) ${q.choices.C}`;
   return `Quick one on ${topic?.short ?? "your course"}${when}. ${q.prompt}\nA) ${q.choices.A}  B) ${q.choices.B}  C) ${q.choices.C}`;
 }
 
@@ -51,8 +55,11 @@ export async function sendQuiz(ctx: Ctx, opts: { force?: boolean; solicited?: bo
     const hit = pool.find((x) => x.topicId === topicId);
     if (hit) { q = hit; break; }
   }
-  if (opts.startSession) state.session = { total: opts.startSession, asked: 0, answered: 0, firstTry: 0, topicIds: [] };
-  if (state.session) { state.session.asked += 1; state.session.topicIds.push(q.topicId); }
+  if (opts.startSession) state.session = { total: opts.startSession, asked: 0, answered: 0, firstTry: 0, topicIds: [], log: [], start: {}, startedAt: now.toISOString() };
+  if (state.session) {
+    state.session.asked += 1; state.session.topicIds.push(q.topicId);
+    if (state.session.start && !(q.topicId in state.session.start)) state.session.start[q.topicId] = state.mastery[q.topicId] ?? 0.5; // "before", for the round card
+  }
   state.pendingQuiz = { questionId: q.id, attempts: 0 };
   state.counters = rollCounters(state.counters, now, deps.tz);
   state.counters.quizzes += 1;
@@ -66,10 +73,13 @@ export async function answerQuiz(ctx: Ctx, choice: Choice | "unknown"): Promise<
   const pq = state.pendingQuiz!;
   const q = state.questions.find((x) => x.id === pq.questionId)!;
   const correct = choice === "unknown" ? false : gradeChoice(q, choice); // graded in code
+  const inRound = !!state.session; // a round ends with its own summary; only a one-off question gets the offer
   // "I don't know" right after a hint is giving up: skip the second hint and reveal the answer.
   if (choice === "unknown" && pq.hinted && pq.attempts === 0) pq.attempts = 1;
   state.mastery[q.topicId] = updateMastery(state.mastery[q.topicId] ?? 0.5, correct); // mastery in code
   pq.attempts += 1;
+  // The round card shows each question's first answer: record it once.
+  if (state.session?.log && !state.session.log.some((l) => l.questionId === q.id)) state.session.log.push({ questionId: q.id, firstTry: correct && pq.attempts === 1, chose: choice });
 
   let resolved = false;
   if (correct) {
@@ -96,6 +106,35 @@ export async function answerQuiz(ctx: Ctx, choice: Choice | "unknown"): Promise<
   }
   await onMasteryChange(ctx, q.topicId);
   if (resolved) await advanceSession(ctx); // a wrong first answer waits for the retry; a finished question moves on by itself
+  if (resolved && !inRound) await offerTheRest(ctx, q.topicId);
+}
+
+/**
+ * A one-off question (Scout's "added a few questions", a nudge) is settled: offer the rest instead of going quiet.
+ * Only when nothing else waits for a YES, so a YES can only ever mean one thing.
+ */
+export async function offerTheRest(ctx: Ctx, topicId: string): Promise<void> {
+  const { state, deps } = ctx;
+  if (state.pendingQuiz || state.pendingOffer || state.proposals.some((p) => p.status === "pending")) return;
+  // They just said stop: answering the open question is not a request for more.
+  if (state.messages.filter((m) => m.dir === "in").slice(-3).some((m) => /^(stop|enough|that'?s (all|enough)|no more|i'?m done|done|end)\W*$/i.test(m.text.trim()))) return;
+  const fresh = state.questions.filter((q) => state.unlockedQuestionIds.includes(q.id) && !state.askedQuestionIds.includes(q.id));
+  if (!fresh.length) return;
+  const topic = fresh.some((q) => q.topicId === topicId) ? state.topics.find((t) => t.id === topicId) : undefined;
+  const n = Math.min(fresh.length, NUDGE_ROUND);
+  state.pendingOffer = { kind: "round", ...(fresh.some((q) => q.topicId === topicId) ? { topicId } : {}), expiresAt: new Date(deps.clock.now().getTime() + 2 * 3_600_000).toISOString() };
+  await ctx.say(`${n === 1 ? "One more is" : `${n} more are`} ready${topic ? ` on ${topic.short}` : ""}. Want ${n === 1 ? "it" : "them"}? Reply YES.`, "tutor");
+}
+
+/**
+ * After YES or NO on a study proposal: pick the thread back up instead of going quiet. An open question comes back;
+ * otherwise the rest of the questions are offered.
+ */
+export async function followUp(ctx: Ctx, topicId: string): Promise<void> {
+  const { state } = ctx;
+  const open = state.pendingQuiz && state.questions.find((q) => q.id === state.pendingQuiz!.questionId);
+  if (open) return ctx.say(`Back to the question:\n\n${renderQuiz(ctx, open)}`, "quiz");
+  await offerTheRest(ctx, topicId);
 }
 
 /** After a question is settled: the next one arrives by itself, or the round wraps up with a summary. */
@@ -116,5 +155,10 @@ export async function endSession(ctx: Ctx, lead = ""): Promise<void> {
   const topic = weakest && state.topics.find((t) => t.id === weakest);
   const score = s.answered ? `${s.answered} done, ${s.firstTry} right on the first try.` : "No answers this time.";
   const weak = topic && s.answered ? ` Weakest right now: ${topicLabel(topic.name)} (${Math.round((state.mastery[weakest!] ?? 0.5) * 100)}%).` : "";
-  await ctx.say(`${lead}That's the round. ${score}${weak} Say "quiz me" for another.`, "tutor");
+  const link = s.answered ? await roundLink(ctx, s) : null;
+  if (link) { // the detail lives on the card: one short line, then the link
+    await ctx.say(`${lead}That's the round: ${s.firstTry} of ${s.answered} on the first try.`, "tutor");
+    await sendLink(ctx, link);
+  } else await ctx.say(`${lead}That's the round. ${score}${weak} Say "quiz me" for another.`, "tutor");
+  if (weakest && s.answered) await onMasteryChange(ctx, weakest); // the Planner's turn comes after the recap, never mid-round
 }

@@ -12,6 +12,7 @@ import { NUDGE_ROUND, tick } from "./nudger.ts";
 import type { TickOptions, TickResult } from "./nudger.ts";
 import { runScout } from "./scout.ts";
 import { sendCard } from "./card.ts";
+import { refreshSemester, semesterLink, sendLink } from "./cards.ts";
 import { moveProposal, proposeOnRequest } from "./planner.ts";
 import { finishDrill, gradeDrill, offerDrill, startDrill, timedOut, type Graded } from "./voice.ts";
 import type { CallStatus } from "@syllabus-crew/core";
@@ -35,6 +36,7 @@ const semesterKey = (s: StudentState) => `${s.phase}|${s.parsed}|${s.syllabusHas
 
 /** Most texts one sender may send per hour before the agent stops answering (a flood guard for the public QR code). */
 const MAX_INBOUND_PER_HOUR = 40;
+const SHOT_WAIT_MS = 20_000;
 const DEFAULTS: Opts = { bypassLimits: false, dashboardUrl: "http://localhost:3000", proposalDelayMs: 2000, llmTimeoutMs: 4000, llmProposals: false, sessionLength: 5, nextQuestionDelayMs: 1500, stagedPhoto: true, intakeWaitMs: 6000 };
 
 /** Crew Lead: the one thing the student talks to. Routes to Scout / Tutor / Planner and enforces reply matching in code. */
@@ -44,6 +46,8 @@ export class Crew {
   private locks = new Map<string, Promise<unknown>>();
   private inboundLog = new Map<string, number[]>();
   private intake = new Map<string, { files: FileLoader[]; timer?: ReturnType<typeof setTimeout>; baseline: string }>();
+  /** A screenshot sent once the syllabus is in: held for the text that usually follows it, then shown to the model with that text. */
+  private shots = new Map<string, { image: Attachment; at: number; timer?: ReturnType<typeof setTimeout> }>();
 
   constructor(d: CrewDeps) {
     const { calendar, opts, ...rest } = d;
@@ -124,7 +128,7 @@ export class Crew {
       }
 
       // 1b. A question about the syllabus is open: a date or percent answers it.
-      if (needsAnswer(state) && !state.pendingQuiz && (await tryAnswerAsk(ctx, text))) return;
+      if (needsAnswer(state) && !state.pendingQuiz && (await tryAnswerAsk(ctx, text))) return refreshSemester(ctx); // the card shows the fix; no new link
 
       // 2b. Leaving a practice round, or passing on a question.
       if (state.session && /^(stop|enough|that'?s (all|enough)|no more|i'?m done|done|end)\W*$/i.test(text)) { state.session = undefined; return ctx.say(`Okay, that's enough for now. Say "quiz me" whenever you want more.`, "tutor"); }
@@ -168,7 +172,7 @@ export class Crew {
         (state.reminders ??= []).push({ id: `rem_${state.reminders.length + 1}`, text: rem.text, dueISO: rem.due.toISOString(), status: "pending", createdAt: this.deps.clock.now().toISOString() });
         return ctx.say(`Got it. I'll remind you ${formatWhen(rem.due, this.deps.clock.now(), this.deps.tz)} to ${rem.text}.`, "reminder");
       }
-      if (/\bquiz me\b|another (one|question)|next question|^(next|more|again|keep going|go on|continue)\W*$/i.test(text)) {
+      if (/\bquiz me\b|another (one|question)|next question|^(next|more|again|keep going|go on|continue)\W*$|\bwhere('?s| is) (my|the) (quiz|question)|\b(give|send|start) me (a |the |my )?(quiz|question)|\bi want (a |to )?quiz\b|^(a )?quiz\W*$/i.test(text)) {
         const open = state.pendingQuiz && state.questions.find((q) => q.id === state.pendingQuiz!.questionId);
         if (open) return ctx.say(`Still waiting on this one:\n\n${renderQuiz(ctx, open)}`, "quiz");
         if (await sendQuiz(ctx, { solicited: true, startSession: this.deps.opts.sessionLength })) return;
@@ -181,9 +185,11 @@ export class Crew {
       }
       if (/\b(focus|prioriti[sz]e)\b|what should i (study|work on)/i.test(text)) return ctx.say(this.focusSummary(state), "focus");
       if (isStudyRequest(text)) return proposeOnRequest(ctx, text); // the Planner proposes; only YES books it
-      const small = await safeText(this.deps, "smalltalk", "crew-lead", this.chatContext(state, text),
+      const shot = this.takeScreenshot(id);
+      const small = await safeText(this.deps, "smalltalk", "crew-lead", this.chatContext(state, text, !!shot),
         "I'm here. I'll text you quiz questions on what's coming up, and I'll ask before I change your calendar.", () => true,
-        `\n\nYour name is ${this.nameOf(state)}. You are the student's personal agent from ${PRODUCT_NAME}. Tone: ${state.vibe ?? "chill"}.`);
+        `\n\nYour name is ${this.nameOf(state)}. You are the student's personal agent from ${PRODUCT_NAME}. Tone: ${state.vibe ?? "chill"}.`,
+        shot ? [shot] : undefined);
       // If the reply offers a quiz, remember the offer, so a YES starts one and a NO is understood (step 1a).
       if (/\b(quiz|question|practice|round|drill)\b[^?]*\?\s*$/i.test(small)) state.pendingOffer = { kind: "round", expiresAt: new Date(this.deps.clock.now().getTime() + 2 * 3_600_000).toISOString() };
       return ctx.say(small, "smalltalk");
@@ -191,16 +197,41 @@ export class Crew {
   }
 
   /** What the model sees for a free-text reply: the recent thread and the last question, so "I think it's B" makes sense. */
-  private chatContext(state: StudentState, text: string): string {
-    const recent = state.messages.slice(-9, -1).map((m) => `${m.dir === "in" ? "Student" : "You"}: ${m.text}`).join("\n");
+  private chatContext(state: StudentState, text: string, withShot = false): string {
+    // Card links and the contact card are shown to the model as what they are, never as URLs it could quote back (#106).
+    const shown = (m: StudentState["messages"][number]) => m.kind === "card" ? "[a tap-to-open card: a summary page, not a quiz]" : m.kind === "contact-card" ? "[your contact card]" : m.text.replace(/https?:\/\/\S+/g, "[link]");
+    const recent = state.messages.slice(-9, -1).map((m) => `${m.dir === "in" ? "Student" : "You"}: ${shown(m)}`).join("\n");
     const lastId = state.pendingQuiz?.questionId ?? state.askedQuestionIds.at(-1);
     const q = lastId && state.questions.find((x) => x.id === lastId);
     const quiz = q ? `\n\nThe last quiz question: ${q.prompt} A) ${q.choices.A} B) ${q.choices.B} C) ${q.choices.C}. Correct answer: ${q.correct}) ${q.choices[q.correct]}. Why: ${q.explanation}${state.pendingQuiz ? " (still open: do not reveal the answer)" : " (already answered)"}` : "";
-    return `Recent messages:\n${recent || "(none)"}${quiz}\n\nThe student's new message: ${text}`;
+    const shot = withShot ? "\n\nThe student sent the attached screenshot just before this message (often of something you said earlier). Read it." : "";
+    return `Recent messages:\n${recent || "(none)"}${quiz}${shot}\n\nThe student's new message: ${text}`;
   }
 
   // ---------- naming ----------
   private nameOf(state: StudentState): string { return state.agentName ?? DEFAULT_AGENT_NAME; }
+
+  /** Holds a screenshot for the text that usually follows. If none comes within 20 s, asks what it's about. */
+  private async holdScreenshot(ctx: Ctx, image: Attachment): Promise<void> {
+    const id = ctx.state.id;
+    clearTimeout(this.shots.get(id)?.timer);
+    const entry: { image: Attachment; at: number; timer?: ReturnType<typeof setTimeout> } = { image, at: Date.now() };
+    entry.timer = setTimeout(() => {
+      if (this.shots.get(id) !== entry) return;
+      void this.run(id, async () => {
+        const c = await this.open(id, false);
+        if (c && this.shots.get(id) === entry) await c.say("Got your screenshot. What would you like me to do with it?", "photo");
+      }).catch(() => {});
+    }, SHOT_WAIT_MS);
+    entry.timer.unref?.();
+    this.shots.set(id, entry);
+  }
+  private takeScreenshot(id: string): Attachment | undefined {
+    const s = this.shots.get(id);
+    this.shots.delete(id);
+    if (s) clearTimeout(s.timer);
+    return s && Date.now() - s.at < 5 * 60_000 ? s.image : undefined;
+  }
 
   /** A brand-new thread: nothing parsed, nothing said yet. A photo first skips this (the name stays the default). */
   private isFirstContact(state: StudentState): boolean {
@@ -323,12 +354,16 @@ export class Crew {
       const loaded = await Promise.race([file().catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 3000).unref?.())]);
       if (loaded?.mediaType === "application/pdf") return this.collect(ctx, async () => loaded, 0);
       if (!deps.opts.stagedPhoto) return this.collect(ctx, loaded ? async () => loaded : file);
+      // The syllabus is already in: a photo now is part of the conversation (usually a screenshot), not a syllabus page.
+      if (state.parsed && loaded && loaded.mediaType !== "image/gif") return this.holdScreenshot(ctx, loaded);
     }
     if (state.phase === "day1" && !state.parsed) {
       // Staged: the stored parse for the demo syllabus photo, not Textract + the LLM.
       const p = stagedParse(deps.clock.now(), deps.tz);
       state.courses = p.courses; state.exams = p.exams; state.topics = p.topics; state.parsed = true;
-      await ctx.say(`${p.summary} Here's your semester: ${deps.opts.dashboardUrl}`, "onboarding");
+      const link = await semesterLink(ctx);
+      await ctx.say(link ? p.summary : `${p.summary} Here's your semester: ${deps.opts.dashboardUrl}`, "onboarding");
+      await sendLink(ctx, link);
       return;
     }
     // Several photos sent together get one reply, not one each.
@@ -383,7 +418,7 @@ export class Crew {
 
   // ---------- proactive / controls ----------
   async runScoutNow(id: string): Promise<boolean> {
-    return this.run(id, async () => { const c = await this.open(id, false); return c ? runScout(c) : false; });
+    return this.run(id, async () => { const c = await this.open(id, false); if (!c) return false; const found = await runScout(c); if (found) await refreshSemester(c); return found; });
   }
   // ---------- voice drills ----------
   async offerDrillNow(id: string, force = true): Promise<{ sent: boolean; reason?: string }> {
@@ -457,9 +492,14 @@ export class Crew {
       state.phase = "live"; state.parsed = true; state.syllabus = parsed; state.syllabusHash = hash;
       const ctx = makeCtx(this.deps, state);
       const { patch, missing } = refresh(state, this.deps.tz);
-      const summary = `${describe(parsed, patch, this.deps.tz, this.deps.clock.now())} Here's your semester: ${this.deps.opts.dashboardUrl}`;
+      const link = await semesterLink(ctx);
+      const read = describe(parsed, patch, this.deps.tz, this.deps.clock.now());
+      const summary = link ? read : `${read} Here's your semester: ${this.deps.opts.dashboardUrl}`;
       await ctx.say(summary, "onboarding");
-      return { summary, question: await askNext(ctx, missing) };
+      await sendLink(ctx, link);
+      const question = await askNext(ctx, missing);
+      await refreshSemester(ctx); // the open question shows on the card too
+      return { summary, question };
     });
   }
 

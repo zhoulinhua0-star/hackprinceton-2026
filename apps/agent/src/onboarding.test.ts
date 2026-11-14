@@ -250,5 +250,5 @@ test("a PDF read that finishes after Week 6 was pressed does not overwrite Week 
   assert.equal(st.phase, "week6");
   assert.ok(st.pendingQuiz, "the open quiz survives");
   await s.crew.onInbound(ME, { text: "A" });
-  assert.match(s.last(), /^Correct!/);
+  assert.ok(s.texts().slice(-2).some((t) => /^Correct!/.test(t))); // then the offer for the rest
 });

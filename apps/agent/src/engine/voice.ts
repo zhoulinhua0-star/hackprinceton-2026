@@ -7,6 +7,7 @@ import {
 import type { CallStatus, Drill, LLM, StudentState } from "@syllabus-crew/core";
 import { bypassFor, rules, type Ctx } from "./ctx.ts";
 import { onMasteryChange } from "./planner.ts";
+import { drillLink, sendLink } from "./cards.ts";
 
 export const OFFER_HOURS = 3;
 const pretty = (n?: string) => n?.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, "($1) $2-$3") ?? "my number";
@@ -129,7 +130,9 @@ export async function finishDrill(ctx: Ctx, drillId: string, status: CallStatus,
   d.masteryAfter = drillMastery(d.masteryBefore, d.score); // in code
   d.snippet = said.length > 160 ? `${said.slice(0, 157).trim()}…` : said;
   state.mastery[d.topicId] = d.masteryAfter;
-  await ctx.say(drillRecap(d, nameOf(state, d.topicId), g.feedback), "drill");
+  const link = await drillLink(ctx, d);
+  if (link) { await ctx.say(g.feedback, "drill"); await sendLink(ctx, link); } // the answer and the checklist live on the card
+  else await ctx.say(drillRecap(d, nameOf(state, d.topicId), g.feedback), "drill");
   await onMasteryChange(ctx, d.topicId); // still weak: the Planner may propose study time, which still needs a YES
 }
 

@@ -8,13 +8,15 @@ export class BedrockLLM implements LLM {
     // A new AWS account has low rate limits: retry throttling (429) with backoff instead of failing.
     this.client = new AnthropicBedrock({ awsRegion: o.region, maxRetries: 6 });
   }
-  async text(task: LlmTask, input: { system: string; user: string }): Promise<string> {
+  async text(task: LlmTask, input: { system: string; user: string; images?: Attachment[] }): Promise<string> {
     const strong = task === "parse_syllabus" || task === "write_questions";
     const res = await this.client.messages.create({
       model: strong ? this.o.strongModel : this.o.defaultModel,
       max_tokens: strong ? 4000 : 300,
       ...(input.system ? { system: input.system } : {}),
-      messages: [{ role: "user", content: input.user }],
+      messages: [{ role: "user", content: input.images?.length
+        ? [...input.images.map((a) => ({ type: "image", source: { type: "base64", media_type: a.mediaType, data: a.base64 } })), { type: "text", text: input.user }] as any
+        : input.user }],
     });
     return res.content.map((b: any) => (b.type === "text" ? b.text : "")).join("").trim();
   }

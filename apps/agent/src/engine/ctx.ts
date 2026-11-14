@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { Caller, Clock, LLM, LlmTask, Messenger, Store, StudentState } from "@syllabus-crew/core";
+import type { Attachment, Caller, CardStore, Clock, LLM, LlmTask, Messenger, Store, StudentState } from "@syllabus-crew/core";
 
 export interface Opts {
   /** Demo controls bypass quiet hours and daily caps. */
@@ -28,7 +28,7 @@ export interface Opts {
 export type Bypass = boolean | string[];
 
 /** What the Planner, Tutor and Scout may use. Deliberately has no calendar. */
-export interface Deps { store: Store; messenger: Messenger; llm: LLM; clock: Clock; tz: string; opts: Opts; /** Voice drills; unset = not set up. */ caller?: Caller }
+export interface Deps { store: Store; messenger: Messenger; llm: LLM; clock: Clock; tz: string; opts: Opts; /** Voice drills; unset = not set up. */ caller?: Caller; /** Tap-to-open cards; unset = text only. */ cards?: CardStore }
 
 export interface Ctx { deps: Deps; state: StudentState; say(text: string, kind?: string): Promise<void>; commit(): Promise<void> }
 
@@ -54,11 +54,12 @@ export function rules(name: string): string {
 /** LLM call with a timeout and a guaranteed fallback, so slow Wi-Fi or an outage never stalls the thread. */
 export async function safeText(
   deps: Deps, task: LlmTask, agent: string, user: string, fallback: string, accept: (t: string) => boolean = () => true, systemExtra = "",
+  images?: Attachment[],
 ): Promise<string> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const out = await Promise.race([
-      deps.llm.text(task, { system: rules(agent) + systemExtra, user }),
+      deps.llm.text(task, { system: rules(agent) + systemExtra, user, ...(images?.length ? { images } : {}) }),
       new Promise<string>((_, rej) => { timer = setTimeout(() => rej(new Error("llm timeout")), deps.opts.llmTimeoutMs); }),
     ]);
     const t = out?.trim();

@@ -1,55 +1,44 @@
 # Handoff: where the project stands
 
-Read this first when resuming. Last updated at commit 68bbd93 (Nov 14, ~1:30 AM ET). 189 tests pass (`npm test -w @syllabus-crew/core -w @syllabus-crew/agent`).
-Details live in SPEC.md, PLAN.md, DECISIONS.md (92+ numbered decisions), README.md, CLAUDE.md (hard rules).
+Read this first when resuming. Last updated at commit 7eb9ac6 (Nov 14, ~2:30 PM ET), pushed to GitHub. 205 tests pass (`npm test -w @syllabus-crew/core -w @syllabus-crew/agent`: 66 core + 139 agent); all 3 workspaces typecheck (`npm run typecheck --workspaces --if-present`).
+Details live in SPEC.md, PLAN.md, DECISIONS.md (104 numbered decisions), README.md, CLAUDE.md (hard rules), DEMO-SCRIPT.md (stage run).
 
 ## What is built and confirmed on the real iPhone
-- Photon iMessage in/out (shared line +1 628 502 3837; no typing indicator on shared lines; photos arrive as attachmentId).
-- The staged Macro stage demo loop: photo -> Day 1 parse (stored) -> Switch to Week 6 -> Scout -> quiz -> wrong answer -> Socratic hint -> proposal -> YES -> real Google Calendar event.
-- Real syllabus: upload PDF/images at /upload -> Claude (Sonnet 4.6 on Bedrock) reads -> code validates, computes weights/weeks/crunch -> agent texts summary and asks missing things one at a time (answers parsed in code).
-- Real Tutor: model writes questions on the syllabus readings, code validates/shuffles, an independent call double-checks keys. Practice rounds (quiz me -> 5 questions, auto-continue), hint / skip / stop / idk handling.
-- Scheduler + Nudger: pure policy in packages/core/src/nudger.ts; reminders ("remind me Sunday to ..."), morning quiz, stakes-scaled nudges with YES/NO, pause/stop/resume. Scheduler runs in DRY mode by default.
-- Dashboard (Next.js): exam cards, mastery bars, timeline, proposals, reminders, thread, /demo controls, /upload, /join (QR).
-- Naming + vibe (tests only, NOT yet tried on the real iPhone): the student names the agent, picks chill / strict / hype, answers one question; rename and vibe change any time. Default name is `DEFAULT_AGENT_NAME` in packages/core/src/naming.ts ("Syl", chosen by the user).
-- A texted PDF syllabus is read for real, always (confirmed on the real iPhone with a real PDF; DECISIONS #97-98). A texted photo is still the staged Macro shortcut for the stage demo.
-- "Say hello" control on /demo: the agent texts first (DECISIONS #94).
-- New look ("Study Desk", DECISIONS #95): characters, phone-framed thread with sender labels, scroll-revealed crew tree, "Meet the crew" tabs.
+- Photon iMessage in/out (shared line +1 628 502 3837; no typing indicator on shared lines; files arrive as attachmentId and download).
+- Stage demo loop (DEMO-SCRIPT.md): Reset -> text `seed/macro-syllabus.pdf` (REAL read, ~7-10 s) -> wait for the summary -> Switch to Week 6 -> Run Scout now -> quiz -> B -> Socratic hint -> proposal (with exact date) -> YES -> real Google Calendar event. A read that finishes after Week 6/Reset is dropped (#102). The photo `seed/macro-syllabus.jpg` is the instant saved-copy fallback.
+- Real syllabus: a texted PDF is always read for real (#97-98); also /upload. Claude Sonnet 4.6 reads, code validates and does the math, asks missing things one at a time.
+- Tutor: written + double-checked questions, rounds, hint/skip/stop/idk. Free chat sees the recent thread and the last question; a quiz offer it makes is answerable by YES; it may never claim to have booked anything (#101).
+- Planner: "book me a study block / schedule chapter 4 review Tuesday 3pm for an hour" makes a real proposal; "make it Monday at 2pm" moves it; only YES books it; texts show the exact date ("Tuesday, Nov 17") (#101).
+- Naming + vibe: agent texts first via the /demo "Say hello" control (#94), asks name (default "Syl"), vibe (chill/strict/hype), which class worries you most. Rename / vibe change any time (#93).
+- Voice drills (#103-104), part of the Tutor: /demo "Offer a voice drill" texts "...Reply CALL"; CALL / "drill me" / "call me" rings from +1 609 785 4521 (Photon SIP number) through the ElevenLabs agent "Syl voice drill"; the server polls the call, Claude grades the transcript against key points, mastery changes in code, the recap text spells out the answer. One hint, then the agent explains the answer. Rules: only after CALL, 9am-8pm, one a day, one at a time, 10-min timeout (demo number exempt). Dashboard drill card.
+- Scheduler + Nudger (DRY mode by default), reminders, pause/resume.
+- Dashboard "Study Desk" look (#95): characters, phone-framed thread with sender labels, scroll-revealed crew tree, Meet the crew tabs, drill card. No presenter key (#96). The user added a campus background image.
 
 ## Run it
-- Agent: `npm run start -w @syllabus-crew/agent` (127.0.0.1:8787). Dashboard: `npm run dev -w @syllabus-crew/web` (localhost:3000).
-- Secrets only in `.env` and `.data/` (both gitignored). Variable names are in README "Setup". The agent needs `DEMO_ADMIN_TOKEN`; the dashboard has no key (it listens on this machine only; DECISIONS #96).
-- Open controls: `open http://localhost:3000/demo` (also linked from the dashboard header).
-- Scheduler: `SCHEDULER=off|dry|on` in .env (default dry = logs only). Set `on` to let it text for real; restart the agent after changing .env.
-- Models: Haiku 4.5 default, Sonnet 4.6 for syllabus/questions (`us.anthropic...` inference-profile IDs; Haiku/Sonnet 5.5 are blocked on this AWS account). Bedrock via IAM keys (long-term API keys are blocked by an account policy).
-- Google: calendar.events scope only; test-mode token expires after ~7 days (reconnect at `http://127.0.0.1:8787/auth/google?token=<DEMO_ADMIN_TOKEN>` the week of the event).
+- Agent: `npm run start -w @syllabus-crew/agent` (127.0.0.1:8787; log line says "voice drills on/off"). Dashboard: `npm run dev -w @syllabus-crew/web` (localhost:3000). Both must be running; the user can ask Claude to start them.
+- Secrets only in `.env` and `.data/` (gitignored). Read .env by NAME only. Voice needs `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `ELEVENLABS_PHONE_NUMBER_ID` (all set), `PHOTON_VOICE_NUMBER=+16097854521`.
+- Controls: http://localhost:3000/demo (also linked from the dashboard header).
+- The voice agent's prompt lives in ElevenLabs; the source of truth is `agents/voice-drill.md` (updated through the API with the ElevenAgents-write key). Grading/writing rules: `agents/voice-drill-grader.md`, `agents/voice-drill-writer.md`.
+- Models: Haiku 4.5 default, Sonnet 4.6 for syllabus/questions/drills (`us.anthropic...` IDs). Google token expires ~7 days after connecting.
 
-## State of the demo student right now
-The student record is on the REAL syllabus (a humanities seminar; `seed/private/real-syllabus.pdf`, gitignored). For the Macro stage demo: press Reset demo (and re-upload the real syllabus afterwards if wanted). Reset deletes the calendar events the demo created.
+## Costs running
+- Photon voice number $2/month (card on file in Photon); calls ~$0.013/min. Cancel after the event. ElevenLabs agent minutes from the user's plan. Bedrock a few cents per read/grade.
 
-## Stage demo checklist (brief section 16)
-Reset demo -> text `seed/macro-syllabus.jpg` (any first image works; staged parse) -> Switch to Week 6 -> Run Scout now -> reply B -> (hint + proposal) -> reply YES -> check Google Calendar -> Reset demo. Run it 3 times in a row; record a backup video; test QuickTime mirroring on the projector.
+## Not done yet (user's order)
+1. The user's own product changes (they said they'd list them).
+2. Pitch deck (competitor slide with UpAhead, architecture, AWS stack: Bedrock live, DynamoDB built but blocked by the event account's org policy; voice drills; evidence from hacker interviews).
+3. Judge QR test with a second phone (LAST): a shared line only replies to assigned numbers (createSharedLineAssignment via Photon MCP, 25 seats). Expected: friend scans /join, sends "Hi Syllabus Crew", gets the intro and name question.
+4. Later: replace the localhost dashboard link in the summary text with a hosted HTML page (user wants this); rotate the Photon outbound SIP password (it appeared in a screenshot in chat) and update ElevenLabs.
+- Rehearse the new PDF beat 1 of DEMO-SCRIPT.md again (runs 1-3 used the photo). No backup video (user decision).
+- DynamoDB: SKIPPED (#99): code works (`STORE=dynamo`), but an AWS Organizations service control policy denies DynamoDB on the event account.
 
-## Not done yet (suggested order)
-- The summary text's dashboard link stays for now; the user wants it to become a hosted HTML page later (a phone cannot open localhost).
-- Voice drills: blocked until a card is on file in Photon (number purchase returned 402 ENTITLEMENT_REQUIRED, purchaseRefusal payment_method_required).
-- DynamoDB: SKIPPED (user decision). Code is built and tested but the event AWS account blocks DynamoDB with an organization service control policy (explicit deny), which no IAM policy can override. Say so honestly on the deck.
-1. Stage rehearsal x3 + a one-page demo script + backup video.
-2. Pitch: deck (competitor slide with the UpAhead screenshot, architecture, AWS stack, evidence from hacker interviews Saturday morning), README polish.
-3. DynamoDB store: BUILT (DECISIONS #99), switched on with `STORE=dynamo` after `npm run dynamo:setup -w @syllabus-crew/agent`. Needs the IAM user `hackprinceton` to have DynamoDB permissions on the `syllabus-crew-students` table. Textract/EventBridge need AWS deployment: show on the slide as the production plan.
-4. Syllabus screenshots texted over iMessage read for real (needs Photon attachment download via `photon.projects.downloadAttachment`, which works, plus waiting to collect pages). Today the first photo on Day 1 loads the stored Macro parse.
-5. Judge QR flow test with a second phone: a shared line only replies to numbers with an assignment (createSharedLineAssignment via the Photon MCP), max 25 seats. Untested with an unassigned number.
-6. Stretch: voice (Photon SMS number + SIP provider), Gmail scan, crunch heatmap.
-
-## Repo is public (done)
-- Pushed as ONE clean commit. Local-only backup branches `full-history` and `old-main` contain the real phone number: never push them. Never commit .env, .data/, seed/private/.
-- Stage demo script and rehearsal log: DEMO-SCRIPT.md.
-- Keep `PHOTON_WEBHOOK_SECRET` (unused) out; delete stale vars.
+## Repo
+- Public GitHub `zhoulinhua0-star/hackprinceton-2026`, `main` from one clean root commit. Local-only branches `full-history` and `old-main` contain the real phone number: NEVER push them. Never commit .env, .data/, seed/private/.
 
 ## Known limits (be honest in the pitch)
-- Questions come from the model's knowledge of standard works, not the reading's text (obscure readings = weaker questions).
-- Scout reads a staged inbox (no Gmail / calendar-feed yet). Nudger wording is templated.
-- Agent runs on the laptop; dashboard is local (a Vercel deploy would need a tunnel). EventBridge would need the agent deployed to AWS.
-- A new AWS account throttles Bedrock (429s); the client retries up to 6 times.
+- Questions come from the model's knowledge of the reading, not its text. Scout reads a staged inbox. Nudger wording is templated.
+- Agent runs on the laptop; dashboard is local. One agent process assumed.
+- Voice drills: grading is the model's judgment of the transcript (keyword fallback); the call needs the laptop online.
 
 ## Working style that has worked
-Step by step; the user tests every change on their real iPhone and sends screenshots; fix what the screenshots show; commit after each verified step; never print secrets.
+Step by step; the user tests every change on their real iPhone and sends screenshots; fix what the screenshots show (check transcripts/logs before claiming a cause); add a regression test; commit only when asked; never print secrets; give click-by-click instructions for dashboards (Photon, ElevenLabs, AWS).

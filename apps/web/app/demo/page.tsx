@@ -33,6 +33,7 @@ export default function Demo() {
       const body = await res.json();
       ok = res.ok;
       if (res.ok && Array.isArray(body.actions)) setResult(body.actions.length ? body.actions.map((a: { kind: string; sent: boolean; text?: string; reason?: string }) => `${a.kind}${a.sent ? " (sent)" : ""}: ${a.text ?? a.reason ?? ""}`).join("\n") : "Nothing to do.");
+      else if (res.ok && action === "scout") setResult(body.found ? "Scout found the Week 6 slides and sent the first quiz." : `Scout found nothing. ${body.why ?? ""}`);
       else setResult(res.ok ? (action === "questions" ? "Writing questions now. This takes about a minute; the dashboard header shows progress and your phone gets a text when they're ready." : `${action}: ${JSON.stringify(body)}`) : `${action}: ${body.error ?? res.status}`);
     } catch { setResult("Could not reach the dashboard server."); }
     setRunning(null);

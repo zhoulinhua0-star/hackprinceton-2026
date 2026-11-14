@@ -135,6 +135,7 @@ export default function Home() {
         <a className="brand" href="/"><Character kind="lead" size={34} />Syllabus Crew</a>
         <div className="status">
           {view?.vibe && <span className="chip">Vibe: {view.vibe}</span>}
+          {view?.storeMode === "dynamo" && <span className="chip">State: Amazon DynamoDB</span>}
           {view?.stagedPhoto === false && <span className="chip">Texted photos: read for real</span>}
           {view?.scheduler === "on" && <span className="chip">Nudges on</span>}
           {view?.scheduler === "dry" && <span className="chip">Nudges: dry run</span>}

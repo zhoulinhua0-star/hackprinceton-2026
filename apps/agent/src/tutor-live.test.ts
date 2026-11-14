@@ -130,9 +130,9 @@ test("'quiz me' with no questions starts the writer, then the quiz uses the read
   await s.crew.onInbound(ME, { text: wrong });
   assert.match(s.texts().at(-2)!, /^Not quite\. What does Reading [ABC] emphasise, \d\?$/); // the model's hint, not the answer
   assert.doesNotMatch(s.texts().at(-2)!, /Right Reading/);
-  assert.match(s.last(), /^Essay #3 is 30% and Reading [ABC] is your weak spot\. Want me to add 30 minutes of review on \w+day\? Reply YES or NO\.$/);
+  assert.match(s.last(), /^Essay #3 is 30% and Reading [ABC] is your weak spot\. Want me to add 30 minutes of review on \w+day, \w{3} \d{1,2}\? Reply YES or NO\.$/);
   await s.crew.onInbound(ME, { text: "YES" });
-  assert.match(s.last(), /^Done\. \w+day \d:\d\d-\d:\d\d, Reading [ABC] review\.$/);
+  assert.match(s.last(), /^Done\. \w+day, \w{3} \d{1,2}, \d:\d\d-\d:\d\d, Reading [ABC] review\.$/);
   assert.equal(s.calendar.events.length, 1);
   assert.match(s.calendar.events[0]!.title, /^LIT 101: Reading [ABC] review$/); // the short course name, not the long title
 });

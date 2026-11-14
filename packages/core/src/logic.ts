@@ -91,6 +91,10 @@ export function zoned(y: number, m: number, d: number, h: number, mi: number, tz
 export function weekdayName(d: Date, tz: string): string {
   return d.toLocaleDateString("en-US", { weekday: "long", timeZone: tz });
 }
+/** "Tuesday, Nov 17": the weekday plus the exact date, so a proposed slot is never ambiguous. */
+export function dayDate(d: Date, tz: string): string {
+  return `${weekdayName(d, tz)}, ${d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: tz })}`;
+}
 export function clock(d: Date, tz: string): string {
   return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz }).replace(/\s?[AP]M/, "");
 }

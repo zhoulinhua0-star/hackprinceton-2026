@@ -130,7 +130,7 @@ test("an unanswered offer expires, and a late YES does nothing", async () => {
   await tickAt(s, "2026-11-14T13:00:00-05:00");
   s.jump("2026-11-14T20:00:00-05:00");
   await say(s, "yes");
-  assert.equal(s.last(), "Nothing to confirm right now.");
+  assert.match(s.last() ?? "", /^Nothing to confirm right now\./);
 });
 
 test("a dry run reports what it would do and sends nothing", async () => {

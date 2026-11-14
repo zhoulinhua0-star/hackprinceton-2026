@@ -9,6 +9,7 @@ import { calendarRouter } from "./adapters/calendar-router.ts";
 import { GoogleCalendar } from "./adapters/google.ts";
 import { BedrockLLM } from "./adapters/bedrock.ts";
 import { FileStore } from "./adapters/file-store.ts";
+import { DynamoStore, makeDynamo, tableName } from "./adapters/dynamo-store.ts";
 import { fetchAttachment, listen, makePhoton, PhotonMessenger } from "./adapters/photon.ts";
 import { Crew, readSyllabus } from "./index.ts";
 import type { Attachment } from "@syllabus-crew/core";
@@ -28,7 +29,12 @@ const demoMode = process.env.DEMO_MODE !== "false";
 /** off = no scheduler; dry (default) = logs what it WOULD send, sends nothing; on = really texts. */
 const schedulerMode = (process.env.SCHEDULER ?? "dry") as "off" | "dry" | "on";
 
-const store = new FileStore(new URL("../../../.data/state.json", import.meta.url).pathname);
+/** Where student state lives: file (default, .data/state.json) or dynamo (Amazon DynamoDB; run `npm run dynamo:setup` first). */
+const storeMode = process.env.STORE === "dynamo" ? "dynamo" : "file";
+const store = storeMode === "dynamo"
+  ? await DynamoStore.open({ db: makeDynamo(), table: tableName(), log })
+  : new FileStore(new URL("../../../.data/state.json", import.meta.url).pathname);
+if (store instanceof DynamoStore) log(`state: DynamoDB table ${tableName()} (${(await store.ids()).length} student(s) loaded)`);
 const photon = makePhoton(apiKey);
 const messenger = new PhotonMessenger(photon, projectId, store);
 const llm = process.env.USE_FAKE_LLM === "true"
@@ -126,9 +132,9 @@ createServer(async (req, res) => {
   const student = url.searchParams.get("student") ?? defaultStudent;
   try {
     const route = `${req.method} ${url.pathname}`;
-    if (route === "GET /api/state") return send(200, { ...((await store.load(student)) ?? { phase: null }), calendarMode: calendarMode(), tz, scheduler: schedulerMode, stagedPhoto: crew.stagedPhoto });
+    if (route === "GET /api/state") return send(200, { ...((await store.load(student)) ?? { phase: null }), calendarMode: calendarMode(), tz, scheduler: schedulerMode, stagedPhoto: crew.stagedPhoto, storeMode });
     if (route === "GET /api/google/status") return send(200, { connected: google.isConnected(), calendar: google.isConnected() ? await google.calendarInfo() : null });
-    if (route === "POST /api/demo/scout") return send(200, { found: await crew.runScoutNow(student) });
+    if (route === "POST /api/demo/scout") { const found = await crew.runScoutNow(student); return send(200, found ? { found } : { found, why: await crew.whyNoScout(student) }); }
     if (route === "POST /api/demo/quiz") return send(200, { sent: await crew.sendQuizNow(student) });
     if (route === "POST /api/demo/week6") { await crew.switchToWeek6(student); return send(200, { ok: true }); }
     if (route === "POST /api/demo/questions") {
@@ -196,4 +202,6 @@ if (schedulerMode !== "off") {
   setTimeout(pass, 5_000);
 }
 
-process.on("SIGINT", () => { stop(); process.exit(0); });
+const shutdown = async () => { stop(); if (store instanceof DynamoStore) await Promise.race([store.flush(), new Promise((r) => setTimeout(r, 5000))]); process.exit(0); };
+process.on("SIGINT", () => void shutdown());
+process.on("SIGTERM", () => void shutdown());

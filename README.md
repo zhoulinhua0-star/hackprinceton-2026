@@ -85,6 +85,7 @@ Open `/join` on the dashboard for a QR code that opens Messages with the first t
 |---|---|
 | **Photon 2.0 beta** project + a shared iMessage line, with the user's number assigned | photon.codes/beta. `PHOTON_PROJECT_ID`, `PHOTON_API_KEY`, `PHOTON_IMESSAGE_LINE` |
 | **AWS Bedrock**, Claude Haiku 4.5 (default) and Sonnet 4.6 enabled in `us-east-1` | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `BEDROCK_MODEL_DEFAULT=us.anthropic.claude-haiku-4-5-20251001-v1:0`, `BEDROCK_MODEL_STRONG=us.anthropic.claude-sonnet-4-6` |
+| **Amazon DynamoDB** (optional; state stays in `.data/state.json` without it) | `STORE=dynamo`, optional `DYNAMODB_TABLE_PREFIX` (default table `syllabus-crew-students`). The IAM user needs `dynamodb:CreateTable`, `DescribeTable`, `TagResource`, `PutItem`, `GetItem`, `Scan` on that table. Run `npm run dynamo:setup -w @syllabus-crew/agent` once |
 | **Google Calendar**: OAuth client (Testing mode), `calendar.events` scope only | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:8787/auth/google/callback`. Connect once at `/auth/google?token=<DEMO_ADMIN_TOKEN>` on the agent |
 | **Demo** | `DEMO_ADMIN_TOKEN` (a long random string), `DEMO_STUDENT` (the demo phone number), `DEMO_MODE=true` (bypasses quiet hours and caps for the demo student only), `STUDENT_TIMEZONE`, `AGENT_PORT`, `AGENT_URL`, `DASHBOARD_URL` |
 

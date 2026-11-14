@@ -9,13 +9,15 @@
     "start": "tsx --env-file=../../.env src/server.ts",
     "bedrock:smoke": "tsx --env-file=../../.env src/scripts/bedrock-smoke.ts",
     "parse": "tsx --env-file=../../.env src/scripts/parse-syllabus.ts",
-    "questions": "tsx --env-file=../../.env src/scripts/write-questions.ts"
+    "questions": "tsx --env-file=../../.env src/scripts/write-questions.ts",
+    "dynamo:setup": "tsx --env-file=../../.env src/scripts/dynamo-setup.ts"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^1.1.2",
+    "@aws-sdk/client-dynamodb": "^3.1169.0",
     "@photon-ai/api": "^0.6.0",
-    "socket.io-client": "^4.8.4",
-    "@syllabus-crew/core": "*"
+    "@syllabus-crew/core": "*",
+    "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

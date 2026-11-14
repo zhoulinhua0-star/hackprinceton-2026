@@ -1,6 +1,6 @@
 // THE approve path: the only code that writes to the calendar.
 // Reached from a matched YES text or the dashboard Approve button. Nothing else holds a CalendarWriter.
-import { clock, weekdayName } from "@syllabus-crew/core";
+import { clock, dayDate } from "@syllabus-crew/core";
 import type { CalendarWriter } from "@syllabus-crew/core";
 import type { Ctx } from "./ctx.ts";
 
@@ -22,7 +22,7 @@ export async function approveProposal(ctx: Ctx, calendar: CalendarWriter, propos
   p.calendarLink = created.link;
   await ctx.commit();
   const start = new Date(p.event.startISO), end = new Date(p.event.endISO), tz = ctx.deps.tz;
-  await ctx.say(`Done. ${weekdayName(start, tz)} ${clock(start, tz)}-${clock(end, tz)}, ${p.label}.`, "approval");
+  await ctx.say(`Done. ${dayDate(start, tz)}, ${clock(start, tz)}-${clock(end, tz)}, ${p.label}.`, "approval");
 }
 
 export async function declineProposal(ctx: Ctx, proposalId: string): Promise<void> {

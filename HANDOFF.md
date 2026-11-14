@@ -32,7 +32,7 @@ Reset demo -> text `seed/macro-syllabus.jpg` (any first image works; staged pars
 ## Not done yet (suggested order)
 1. Stage rehearsal x3 + a one-page demo script + backup video.
 2. Pitch: deck (competitor slide with the UpAhead screenshot, architecture, AWS stack, evidence from hacker interviews Saturday morning), README polish.
-3. DynamoDB store (Amazon track; store interface is `Store` in packages/core; FileStore is in apps/agent/src/adapters). Textract/EventBridge need AWS deployment: show on the slide as the production plan.
+3. DynamoDB store: BUILT (DECISIONS #99), switched on with `STORE=dynamo` after `npm run dynamo:setup -w @syllabus-crew/agent`. Needs the IAM user `hackprinceton` to have DynamoDB permissions on the `syllabus-crew-students` table. Textract/EventBridge need AWS deployment: show on the slide as the production plan.
 4. Syllabus screenshots texted over iMessage read for real (needs Photon attachment download via `photon.projects.downloadAttachment`, which works, plus waiting to collect pages). Today the first photo on Day 1 loads the stored Macro parse.
 5. Judge QR flow test with a second phone: a shared line only replies to numbers with an assignment (createSharedLineAssignment via the Photon MCP), max 25 seats. Untested with an unassigned number.
 6. Stretch: voice (Photon SMS number + SIP provider), Gmail scan, crunch heatmap.

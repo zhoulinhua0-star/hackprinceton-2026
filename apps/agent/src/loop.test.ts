@@ -43,7 +43,7 @@ test("the demo loop: photo, Scout, quiz, wrong answer, proposal, YES -> calendar
   assert.equal(after[0], "Not quite. If borrowing gets more expensive, would a firm build a new factory sooner or later?");
   assert.doesNotMatch(after[0]!, /Falls|answer is/); // never reveals on the first miss
   assert.equal((await s.store.load(ME))!.mastery.ch5, 0.35); // 50% -> 35%, computed in code
-  assert.equal(after[1], "Exam 2 is 25% and chapter 5 is your weak spot. Want me to add 30 minutes of review on Tuesday? Reply YES or NO.");
+  assert.equal(after[1], "Exam 2 is 25% and chapter 5 is your weak spot. Want me to add 30 minutes of review on Tuesday, Nov 17? Reply YES or NO.");
   assert.equal(s.calendar.events.length, 0); // nothing written yet
 
   await s.crew.onInbound(ME, { text: "maybe" });
@@ -55,7 +55,7 @@ test("the demo loop: photo, Scout, quiz, wrong answer, proposal, YES -> calendar
   const ev = s.calendar.events[0]!;
   assert.equal(weekdayName(new Date(ev.startISO), TZ), "Tuesday");
   assert.equal(new Date(ev.endISO).getTime() - new Date(ev.startISO).getTime(), 30 * 60_000);
-  assert.equal(s.last(), "Done. Tuesday 4:00-4:30, chapter 5 review.");
+  assert.equal(s.last(), "Done. Tuesday, Nov 17, 4:00-4:30, chapter 5 review.");
   assert.equal((await s.store.load(ME))!.proposals[0]!.status, "approved");
 });
 
@@ -98,7 +98,7 @@ test("YES / letters with nothing pending get a clarifier, not an action", async 
   const s = setup();
   await s.crew.onInbound(ME, { text: "Hi" });
   await s.crew.onInbound(ME, { text: "yes" });
-  assert.equal(s.last(), "Nothing to confirm right now.");
+  assert.match(s.last() ?? "", /^Nothing to confirm right now\./);
   await s.crew.onInbound(ME, { text: "B" });
   assert.match(s.last()!, /don't have a question open/);
   assert.equal(s.calendar.events.length, 0);
@@ -146,7 +146,7 @@ test("LLM guards: a follow-up that leaks the answer, or a proposal that is malfo
   await toQuiz(s);
   await s.crew.onInbound(ME, { text: "B" });
   assert.match(s.messenger.texts().at(-2)!, /^Not quite\. If borrowing/);
-  assert.match(s.last()!, /Tuesday\? Reply YES or NO\.$/);
+  assert.match(s.last()!, /Tuesday, Nov 17\? Reply YES or NO\.$/);
 });
 
 test("a good LLM follow-up is used", async () => {
@@ -241,7 +241,7 @@ test("by default the proposal uses the code's exact wording even if the model of
   const s = setup({ llm, llmProposals: false });
   await toQuiz(s);
   await s.crew.onInbound(ME, { text: "B" });
-  assert.equal(s.last(), "Exam 2 is 25% and chapter 5 is your weak spot. Want me to add 30 minutes of review on Tuesday? Reply YES or NO.");
+  assert.equal(s.last(), "Exam 2 is 25% and chapter 5 is your weak spot. Want me to add 30 minutes of review on Tuesday, Nov 17? Reply YES or NO.");
   assert.equal(s.llm.calls.some((c) => c.task === "proposal"), false);
 });
 

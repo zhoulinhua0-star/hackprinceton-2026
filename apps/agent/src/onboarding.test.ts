@@ -219,3 +219,36 @@ test("a texted PDF is read for real even with the staged switch on; extra photos
   assert.equal(p.texts().length, 1); // the staged summary only: the three extra photos are not answered one by one
   assert.match(p.texts()[0]!, /^Got it\. Exam 2 is 25%/);
 });
+
+test("questions finished after the semester changed (Week 6, Reset) are dropped without a text", async () => {
+  const s = setup();
+  let release!: () => void;
+  const gate = new Promise<void>((r) => { release = r; });
+  const llm = new FakeLLM();
+  llm.jsonByTask.parse_syllabus = SYLLABUS;
+  llm.jsonByTask.write_questions = async () => { await gate; return { questions: [] }; };
+  const crew = new Crew({ store: s.store, messenger: s.messenger, llm, calendar: s.calendar, clock: s.clock, tz: TZ, opts: { proposalDelayMs: 0, nextQuestionDelayMs: 0 } });
+  await crew.onInbound(ME, { text: "Hi", route: ROUTE });
+  await crew.applySyllabus(ME, SYLLABUS, "h1");
+  const writing = crew.generateQuestions(ME, { announce: true });
+  await crew.switchToWeek6(ME);
+  const before = s.messenger.sent.length;
+  release();
+  assert.equal((await writing).added, 0);
+  assert.equal(s.messenger.sent.length, before);
+  assert.equal((await s.store.load(ME))!.phase, "week6");
+});
+
+test("a PDF read that finishes after Week 6 was pressed does not overwrite Week 6 or its open quiz", async () => {
+  const s = realRead();
+  await s.crew.onInbound(ME, { hasImage: true, route: ROUTE, file: async () => ({ mediaType: "application/pdf", base64: "pdf" }) });
+  await s.crew.switchToWeek6(ME); // pressed while the PDF is being read
+  await s.crew.runScoutNow(ME);
+  assert.ok((await s.store.load(ME))!.pendingQuiz);
+  assert.equal(await s.crew.readIntake(ME), "none");
+  const st = (await s.store.load(ME))!;
+  assert.equal(st.phase, "week6");
+  assert.ok(st.pendingQuiz, "the open quiz survives");
+  await s.crew.onInbound(ME, { text: "A" });
+  assert.match(s.last(), /^Correct!/);
+});

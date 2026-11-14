@@ -11,6 +11,7 @@ import { askNext, refresh, tryAnswerAsk, needsAnswer } from "./onboarding.ts";
 import { NUDGE_ROUND, tick } from "./nudger.ts";
 import type { TickOptions, TickResult } from "./nudger.ts";
 import { runScout } from "./scout.ts";
+import { moveProposal, proposeOnRequest } from "./planner.ts";
 import { advanceSession, answerQuiz, renderQuiz, sendQuiz } from "./tutor.ts";
 import { day1State, stagedParse, week6State } from "../seed.ts";
 
@@ -22,6 +23,12 @@ export interface Inbound {
 }
 type FileLoader = NonNullable<Inbound["file"]>;
 const MAX_PAGES = 12;
+/** "book me a study block", "schedule review time Tuesday at 2pm", "add study time to my calendar". */
+const isStudyRequest = (text: string) =>
+  /\b(book|schedule|add|put|block( out)?|set up|plan|reserve|find|make)\b[\s\S]*\b(study|review|session|block|calendar|slot|time to study)\b|\bstudy (block|session|time)\b/i.test(text);
+
+/** Changes whenever the semester is replaced (Week 6, Reset, a new syllabus). */
+const semesterKey = (s: StudentState) => `${s.phase}|${s.parsed}|${s.syllabusHash ?? ""}`;
 
 /** Most texts one sender may send per hour before the agent stops answering (a flood guard for the public QR code). */
 const MAX_INBOUND_PER_HOUR = 40;
@@ -33,7 +40,7 @@ export class Crew {
   private calendar: CalendarWriter; // only ever passed to approveProposal
   private locks = new Map<string, Promise<unknown>>();
   private inboundLog = new Map<string, number[]>();
-  private intake = new Map<string, { files: FileLoader[]; timer?: ReturnType<typeof setTimeout> }>();
+  private intake = new Map<string, { files: FileLoader[]; timer?: ReturnType<typeof setTimeout>; baseline: string }>();
 
   constructor(d: CrewDeps) {
     const { calendar, opts, ...rest } = d;
@@ -127,11 +134,14 @@ export class Crew {
       // "skip" with only a proposal waiting (no question open) declines it.
       if (proposal && !state.pendingQuiz && /^(skip|pass)\W*$/i.test(text)) return declineProposal(ctx, proposal.id);
 
+      // 1c. A new day/time while a proposal waits moves it ("make it Wednesday at 5pm").
+      if (proposal && !state.pendingQuiz && (await moveProposal(ctx, text))) return;
+
       // 2. Unclear replies while something is pending get a clarifying text, never an action.
       if (proposal && isAmbiguous(text)) return ctx.say("I didn't catch that. Reply YES to add it to your calendar, or NO to skip it.", "clarify");
       if (state.pendingQuiz && reply.kind === "other" && /^\S{1,3}$/.test(text)) return ctx.say("Reply A, B or C.", "clarify"); // a short mis-typed answer is not small talk
       if (reply.kind === "choice") return ctx.say("I don't have a question open right now. Say \"quiz me\" for one.", "clarify");
-      if ((reply.kind === "yes" || reply.kind === "no") && !proposal) return ctx.say("Nothing to confirm right now.", "clarify");
+      if ((reply.kind === "yes" || reply.kind === "no") && !proposal) return ctx.say(reply.kind === "yes" ? 'Nothing to confirm right now. Say "quiz me" if you want a question.' : "Nothing to confirm right now.", "clarify");
 
       // 3. Free text.
       const renamed = parseRename(text);
@@ -159,11 +169,23 @@ export class Crew {
         return ctx.say("I can't send a question right now. Try again a bit later.", "clarify");
       }
       if (/\b(focus|prioriti[sz]e)\b|what should i (study|work on)/i.test(text)) return ctx.say(this.focusSummary(state), "focus");
-      const small = await safeText(this.deps, "smalltalk", "crew-lead", text,
+      if (isStudyRequest(text)) return proposeOnRequest(ctx, text); // the Planner proposes; only YES books it
+      const small = await safeText(this.deps, "smalltalk", "crew-lead", this.chatContext(state, text),
         "I'm here. I'll text you quiz questions on what's coming up, and I'll ask before I change your calendar.", () => true,
         `\n\nYour name is ${this.nameOf(state)}. You are the student's personal agent from ${PRODUCT_NAME}. Tone: ${state.vibe ?? "chill"}.`);
+      // If the reply offers a quiz, remember the offer, so a YES starts one and a NO is understood (step 1a).
+      if (/\b(quiz|question|practice|round|drill)\b[^?]*\?\s*$/i.test(small)) state.pendingOffer = { kind: "round", expiresAt: new Date(this.deps.clock.now().getTime() + 2 * 3_600_000).toISOString() };
       return ctx.say(small, "smalltalk");
     });
+  }
+
+  /** What the model sees for a free-text reply: the recent thread and the last question, so "I think it's B" makes sense. */
+  private chatContext(state: StudentState, text: string): string {
+    const recent = state.messages.slice(-9, -1).map((m) => `${m.dir === "in" ? "Student" : "You"}: ${m.text}`).join("\n");
+    const lastId = state.pendingQuiz?.questionId ?? state.askedQuestionIds.at(-1);
+    const q = lastId && state.questions.find((x) => x.id === lastId);
+    const quiz = q ? `\n\nThe last quiz question: ${q.prompt} A) ${q.choices.A} B) ${q.choices.B} C) ${q.choices.C}. Correct answer: ${q.correct}) ${q.choices[q.correct]}. Why: ${q.explanation}${state.pendingQuiz ? " (still open: do not reveal the answer)" : " (already answered)"}` : "";
+    return `Recent messages:\n${recent || "(none)"}${quiz}\n\nThe student's new message: ${text}`;
   }
 
   // ---------- naming ----------
@@ -267,11 +289,11 @@ export class Crew {
   private async onImage(ctx: Ctx, file?: FileLoader): Promise<void> {
     const { state, deps } = ctx;
     state.pendingName = undefined; // a photo instead of a name: keep the default name and get to work
-    if (file && !deps.opts.stagedPhoto) return this.collect(ctx, file);
     if (file) {
-      // A PDF is always read for real. Only photos take the staged shortcut. A slow or failed download counts as a photo.
+      // A PDF is always read for real, at once (it is the whole syllabus). A slow or failed download counts as a photo.
       const loaded = await Promise.race([file().catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 3000).unref?.())]);
-      if (loaded?.mediaType === "application/pdf") return this.collect(ctx, async () => loaded);
+      if (loaded?.mediaType === "application/pdf") return this.collect(ctx, async () => loaded, 0);
+      if (!deps.opts.stagedPhoto) return this.collect(ctx, loaded ? async () => loaded : file);
     }
     if (state.phase === "day1" && !state.parsed) {
       // Staged: the stored parse for the demo syllabus photo, not Textract + the LLM.
@@ -288,17 +310,17 @@ export class Crew {
 
   // ---------- a syllabus texted as photos or a PDF ----------
   /** Pages arrive as separate texts: acknowledge the first, then wait for a quiet moment and read them together. */
-  private async collect(ctx: Ctx, file: FileLoader): Promise<void> {
+  private async collect(ctx: Ctx, file: FileLoader, waitMs = this.deps.opts.intakeWaitMs): Promise<void> {
     const id = ctx.state.id;
     let job = this.intake.get(id);
     if (!job) {
-      job = { files: [] };
+      job = { files: [], baseline: semesterKey(ctx.state) };
       this.intake.set(id, job);
       await ctx.say("Got it, reading your syllabus. Give me about 20 seconds.", "onboarding");
     }
     if (job.files.length < MAX_PAGES) job.files.push(file);
     clearTimeout(job.timer);
-    job.timer = setTimeout(() => void this.readIntake(id).catch(() => {}), this.deps.opts.intakeWaitMs);
+    job.timer = setTimeout(() => void this.readIntake(id).catch(() => {}), waitMs);
     job.timer.unref?.();
   }
 
@@ -315,7 +337,7 @@ export class Crew {
     if (await this.hasSyllabus(id, hash)) { await tell("That's the syllabus I already have, so nothing changed."); return "duplicate"; }
     const read = await readSyllabus(this.deps.llm, pages, this.deps.tz, this.deps.clock.now());
     if (!read.ok) { await tell("I couldn't find a syllabus in that, so nothing changed. Try a clearer photo of each page, or send the PDF."); return "unreadable"; }
-    if (!(await this.applySyllabus(id, read.parsed, hash))) return "none";
+    if (!(await this.applySyllabus(id, read.parsed, hash, job.baseline))) return "none"; // the semester changed while reading
     void this.startQuestions(id, { announce: true }).catch(() => {});
     return "installed";
   }
@@ -334,6 +356,14 @@ export class Crew {
   async runScoutNow(id: string): Promise<boolean> {
     return this.run(id, async () => { const c = await this.open(id, false); return c ? runScout(c) : false; });
   }
+  /** Why Scout found nothing, in words the presenter can act on. */
+  async whyNoScout(id: string): Promise<string> {
+    const s = await this.deps.store.load(id);
+    if (!s?.openedByStudent) return "This number hasn't texted the line yet.";
+    if (!s.inbox.length) return s.phase === "week6" ? "Nothing new to find." : "Scout finds the staged Week 6 slides. Press Switch to Week 6 first, then Run Scout now.";
+    if (s.inbox.every((m) => s.foundMaterialIds.includes(m.id))) return "Scout already found the Week 6 slides. Press Reset demo to run the demo again.";
+    return "It's outside the hours or over today's limit for texts the agent starts.";
+  }
   async sendQuizNow(id: string): Promise<boolean> {
     return this.run(id, async () => { const c = await this.open(id, false); return c ? sendQuiz(c, { force: true }) : false; });
   }
@@ -350,10 +380,12 @@ export class Crew {
    * Installs a syllabus the reader produced as this student's semester, tells them what it found, and asks about
    * what's missing. Returns undefined when the student has never texted the line: the agent never texts first.
    */
-  async applySyllabus(id: string, parsed: ParsedSyllabus, hash?: string): Promise<{ summary: string; question: string | null } | undefined> {
+  async applySyllabus(id: string, parsed: ParsedSyllabus, hash?: string, ifSemester?: string): Promise<{ summary: string; question: string | null } | undefined> {
     return this.run(id, async () => {
       const prev = await this.deps.store.load(id);
       if (!prev?.openedByStudent || !prev.route) return undefined;
+      // A read that started before Week 6 / Reset / another syllabus must not overwrite what happened since.
+      if (ifSemester !== undefined && semesterKey(prev) !== ifSemester) return undefined;
       await this.deleteApprovedEvents(prev); // a new syllabus is a new semester: remove the old demo's calendar events
       const state = day1State(id, true);
       state.route = prev.route;
@@ -404,11 +436,11 @@ export class Crew {
       if (!jobs.length) return { reason: "nothing to write" } as const;
       state.questionsStatus = "generating";
       await this.deps.store.save(state);
-      return { jobs, startAt: state.questions.length, perTopic } as const;
+      return { jobs, startAt: state.questions.length, perTopic, hash: state.syllabusHash } as const;
     });
   }
 
-  private async finishQuestions(id: string, plan: { jobs: TopicJob[]; startAt: number; perTopic: number }, o: { announce?: boolean }): Promise<{ started: boolean; added: number }> {
+  private async finishQuestions(id: string, plan: { jobs: TopicJob[]; startAt: number; perTopic: number; hash?: string }, o: { announce?: boolean }): Promise<{ started: boolean; added: number }> {
     const perTopic = plan.perTopic;
     // 2. the slow part: no lock held
     let written: Awaited<ReturnType<typeof writeQuestions>> | undefined;
@@ -419,6 +451,8 @@ export class Crew {
       const ctx = await this.open(id, false);
       if (!ctx) return { started: true, added: 0 };
       const { state } = ctx;
+      // The semester changed while the questions were being written (Week 6, Reset, another syllabus): drop them quietly.
+      if (state.phase !== "live" || state.syllabusHash !== plan.hash) return { started: true, added: 0 };
       const qs = written?.questions ?? [];
       const ids = new Set(state.questions.map((q) => q.id));
       const fresh = qs.filter((q) => !ids.has(q.id));

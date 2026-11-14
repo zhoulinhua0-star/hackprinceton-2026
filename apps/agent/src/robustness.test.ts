@@ -73,7 +73,7 @@ test("calendar write succeeds but the confirmation text fails: the event is reco
   s.msg.failOn = undefined;
   assert.equal(s.msg.sent.some((t) => /couldn't add/.test(t)), false);
   await s.crew.onInbound(ME, { text: "YES" });
-  assert.equal(s.last(), "Nothing to confirm right now.");
+  assert.match(s.last() ?? "", /^Nothing to confirm right now\./);
   assert.equal(s.calendar.events.length, 1);
 });
 
@@ -200,4 +200,61 @@ test("a corrupt state file is backed up before it is replaced", async () => {
   assert.equal(await st.load("+1"), undefined);
   assert.equal(readdirSync(dir).some((f) => f.startsWith("state.json.corrupt-")), true);
   assert.equal(existsSync(path), true); // original left in place until the next save
+});
+
+test("when Scout finds nothing, the presenter is told what to press", async () => {
+  const s = setup({ bypass: true });
+  await s.crew.onInbound(ME, { text: "Hi" });
+  assert.equal(await s.crew.runScoutNow(ME), false);
+  assert.match(await s.crew.whyNoScout(ME), /Switch to Week 6 first/);
+  await s.crew.switchToWeek6(ME);
+  assert.equal(await s.crew.runScoutNow(ME), true);
+  assert.equal(await s.crew.runScoutNow(ME), false);
+  assert.match(await s.crew.whyNoScout(ME), /already found/);
+  assert.match(await s.crew.whyNoScout("+15555550999"), /hasn't texted/);
+});
+
+test("free chat sees the recent thread and the last question; a quiz offer it makes is answered by YES", async () => {
+  const msg = new FlakyMessenger(), store = new MemoryStore(), clock = new FixedClock(NOON);
+  let seen = "";
+  const llm = new FakeLLM({ smalltalk: () => "The answer is A) Falls: borrowing costs more. Want a quick quiz round on it?" });
+  const text = llm.text.bind(llm);
+  llm.text = async (task, input) => { if (task === "smalltalk") seen = input.user; return text(task, input); };
+  const crew = new Crew({ store, messenger: msg, llm, calendar: new FakeCalendar(), clock, tz: TZ, opts: { proposalDelayMs: 0, nextQuestionDelayMs: 0, bypassLimits: true } });
+  await crew.onInbound(ME, { hasImage: true });
+  await crew.switchToWeek6(ME);
+  await crew.runScoutNow(ME);
+  await crew.onInbound(ME, { text: "A" });
+  await crew.onInbound(ME, { text: "No, I think it's B" });
+  assert.match(seen, /Recent messages:[\s\S]*Student: A/);
+  assert.match(seen, /The last quiz question: If the Fed raises rates[\s\S]*Correct answer: A\)[\s\S]*already answered/);
+  assert.ok((await store.load(ME))!.pendingOffer);
+  await crew.onInbound(ME, { text: "Yes" });
+  assert.match(msg.sent.at(-1)!, /A\)[\s\S]*B\)[\s\S]*C\)/); // a quiz question, not "Nothing to confirm"
+});
+
+test("asking for study time makes a real proposal; a new time moves it; YES books it", async () => {
+  const s = setup({ bypass: true });
+  await s.crew.onInbound(ME, { hasImage: true });
+  await s.crew.switchToWeek6(ME);
+  await s.crew.onInbound(ME, { text: "Can u book me sth for review on my calendar" });
+  assert.match(s.last()!, /^How about \w+day, \w{3} \d{1,2}, [\d:]+ [AP]M-[\d:]+ [AP]M: 30 minutes of chapter \d review before Exam 2 \(25%\)\? Reply YES/);
+  assert.equal((await s.store.load(ME))!.proposals.filter((p) => p.status === "pending").length, 1);
+  assert.equal(s.calendar.events.length, 0); // proposed, not booked
+
+  await s.crew.onInbound(ME, { text: "make it Monday at 2pm" });
+  assert.match(s.last()!, /^Moved: Monday, Nov 16, 2:00 PM-2:30 PM/);
+  await s.crew.onInbound(ME, { text: "book a study block" });
+  assert.match(s.last()!, /^You already have one waiting/);
+  await s.crew.onInbound(ME, { text: "yes" });
+  assert.equal(s.calendar.events.length, 1);
+  assert.match(s.last()!, /^Done\. Monday, Nov 16, 2:00/);
+});
+
+test("a named topic and time are used: 'schedule chapter 4 review tuesday 3pm'", async () => {
+  const s = setup({ bypass: true });
+  await s.crew.onInbound(ME, { hasImage: true });
+  await s.crew.switchToWeek6(ME);
+  await s.crew.onInbound(ME, { text: "schedule chapter 4 review tuesday 3pm for an hour" });
+  assert.match(s.last()!, /^How about Tuesday, Nov 17, 3:00 PM-4:00 PM: 60 minutes of chapter 4 review/);
 });

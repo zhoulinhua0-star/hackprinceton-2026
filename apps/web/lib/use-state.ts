@@ -11,7 +11,7 @@ export interface View {
   courses?: Course[]; exams?: Exam[]; topics?: Topic[];
   mastery?: Record<string, number>;
   proposals?: Proposal[]; messages?: Msg[];
-  stagedPhoto?: boolean; agentName?: string; vibe?: "chill" | "strict" | "hype";
+  stagedPhoto?: boolean; storeMode?: "file" | "dynamo"; agentName?: string; vibe?: "chill" | "strict" | "hype";
   foundMaterialIds?: string[]; pendingQuiz?: boolean; studentTail?: string; calendarMode?: "google" | "local"; tz?: string;
 }
 

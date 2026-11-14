@@ -11,6 +11,7 @@ export interface View {
   courses?: Course[]; exams?: Exam[]; topics?: Topic[];
   mastery?: Record<string, number>;
   proposals?: Proposal[]; messages?: Msg[];
+  agentName?: string; vibe?: "chill" | "strict" | "hype";
   foundMaterialIds?: string[]; pendingQuiz?: boolean; studentTail?: string; calendarMode?: "google" | "local"; tz?: string;
 }
 
@@ -40,13 +41,7 @@ export function useLive(intervalMs = 1500) {
   return { view, offline };
 }
 
-/** The presenter key comes from ?key= once, then lives in sessionStorage. Without it the page is view-only. */
+/** Controls are always unlocked: the dashboard is reachable from this laptop only (see hasKey in lib/agent.ts). */
 export function usePresenterKey(): string | null {
-  const [key, setKey] = useState<string | null>(null);
-  useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get("key");
-    if (fromUrl) { sessionStorage.setItem("presenterKey", fromUrl); window.history.replaceState({}, "", window.location.pathname); }
-    setKey(fromUrl ?? sessionStorage.getItem("presenterKey"));
-  }, []);
-  return key;
+  return "local";
 }

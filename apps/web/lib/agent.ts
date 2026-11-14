@@ -1,5 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
-
 // Server-side only. The browser never sees the agent URL or the agent token.
 const AGENT = process.env.AGENT_URL ?? "http://localhost:8787";
 
@@ -12,9 +10,15 @@ export function agentFetch(path: string, init: RequestInit = {}, timeoutMs = 500
   });
 }
 
-/** Controls (and Approve) need the presenter key, a separate secret from the agent token. Viewing is open. */
+/**
+ * No presenter key: the dashboard binds to 127.0.0.1, so only this laptop can reach it. The one check left is
+ * that a control request comes from the dashboard's own pages, so another website open in the same browser
+ * cannot press the buttons. Never deploy or tunnel the dashboard without putting a real lock back.
+ */
 export function hasKey(req: Request): boolean {
-  const want = Buffer.from(process.env.PRESENTER_KEY ?? "");
-  const given = Buffer.from(req.headers.get("x-demo-key") ?? "");
-  return want.length > 0 && given.length === want.length && timingSafeEqual(given, want);
+  const site = req.headers.get("sec-fetch-site");
+  if (site && site !== "same-origin") return false;
+  const origin = req.headers.get("origin");
+  if (!origin) return true; // curl and same-origin GETs send none
+  try { return ["localhost", "127.0.0.1", "[::1]"].includes(new URL(origin).hostname); } catch { return false; }
 }

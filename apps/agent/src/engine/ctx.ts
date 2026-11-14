@@ -45,12 +45,12 @@ export function rules(name: string): string {
 
 /** LLM call with a timeout and a guaranteed fallback, so slow Wi-Fi or an outage never stalls the thread. */
 export async function safeText(
-  deps: Deps, task: LlmTask, agent: string, user: string, fallback: string, accept: (t: string) => boolean = () => true,
+  deps: Deps, task: LlmTask, agent: string, user: string, fallback: string, accept: (t: string) => boolean = () => true, systemExtra = "",
 ): Promise<string> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const out = await Promise.race([
-      deps.llm.text(task, { system: rules(agent), user }),
+      deps.llm.text(task, { system: rules(agent) + systemExtra, user }),
       new Promise<string>((_, rej) => { timer = setTimeout(() => rej(new Error("llm timeout")), deps.opts.llmTimeoutMs); }),
     ]);
     const t = out?.trim();

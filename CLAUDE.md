@@ -26,8 +26,9 @@ Agent loop: Claude on Amazon Bedrock (Anthropic SDK, `AnthropicBedrock` client f
 - Real Google Calendar writes happen only for the demo student; anyone else gets a local stand-in. Reset deletes only events the app created.
 - A failed text never leaves state behind: `ctx.say` sends first, then records. One open quiz and one open proposal at a time.
 - Proactive texts follow the Nudger policy in `packages/core/src/nudger.ts`: nudges only 9am-8pm, max 3 a day (Scout counts), 4h gap, never mid-conversation, backoff after 2 unanswered; requested reminders always delivered (delayed past quiet hours). Scheduler mode: `SCHEDULER=off|dry|on`, default `dry` (logs only).
-- The agent HTTP server binds to 127.0.0.1 and the dashboard to localhost; controls need the agent token (agent) or `PRESENTER_KEY` (dashboard).
-- The agent never starts a conversation with someone who hasn't texted the line first.
+- The agent HTTP server binds to 127.0.0.1 and the dashboard to localhost; the agent's controls need the agent token. The dashboard has no presenter key (DECISIONS #96): its control routes only accept requests from its own pages. Never deploy or tunnel the dashboard as it is.
+- The agent never texts someone who hasn't asked for it. It texts first only through `startOnboarding` (the presenter's "Say hello" control; later a sign-up form), and only into a thread Photon already has. The scheduler still skips anyone who has not opted in.
+- The student names the agent and picks a vibe (chill / strict / hype). Names and vibes are parsed in code (`packages/core/src/naming.ts`); the vibe only changes set phrases. "Syllabus Crew" stays the product name; the default agent name is `DEFAULT_AGENT_NAME`.
 - No calendar write outside the approve path.
 - Scout never sends email or deletes anything.
 - Math in code: grading, mastery updates, priority score, crunch detection, timing. LLM for language only.

@@ -88,4 +88,12 @@ export interface StudentState {
   questionsStatus?: "generating" | "ready" | "failed";
   /** Questions the student skipped; never asked again. */
   skippedAsks?: string[];
+  /** What the student named their agent. Unset = the default name. */
+  agentName?: string;
+  /** How the agent talks (set phrases only). Unset = chill. */
+  vibe?: "chill" | "strict" | "hype";
+  /** First-contact questions still open: the name, then the vibe, then the class they worry about most. */
+  pendingName?: { step: "name" | "vibe" | "focus"; tries: number };
+  /** The student's answer to "which class worries you most?" (their words). */
+  focusCourse?: string;
 }

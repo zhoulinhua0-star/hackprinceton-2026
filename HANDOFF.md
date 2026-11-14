@@ -1,20 +1,23 @@
 # Handoff: where the project stands
 
-Read this first when resuming. Last updated at commit 68bbd93 (Nov 14, ~1:30 AM ET). 169 tests pass (`npm test -w @syllabus-crew/core -w @syllabus-crew/agent`).
+Read this first when resuming. Last updated at commit 68bbd93 (Nov 14, ~1:30 AM ET). 182 tests pass (`npm test -w @syllabus-crew/core -w @syllabus-crew/agent`).
 Details live in SPEC.md, PLAN.md, DECISIONS.md (92+ numbered decisions), README.md, CLAUDE.md (hard rules).
 
 ## What is built and confirmed on the real iPhone
 - Photon iMessage in/out (shared line +1 628 502 3837; no typing indicator on shared lines; photos arrive as attachmentId).
 - The staged Macro stage demo loop: photo -> Day 1 parse (stored) -> Switch to Week 6 -> Scout -> quiz -> wrong answer -> Socratic hint -> proposal -> YES -> real Google Calendar event.
-- Real syllabus: upload PDF/images at /upload (presenter key) -> Claude (Sonnet 4.6 on Bedrock) reads -> code validates, computes weights/weeks/crunch -> agent texts summary and asks missing things one at a time (answers parsed in code).
+- Real syllabus: upload PDF/images at /upload -> Claude (Sonnet 4.6 on Bedrock) reads -> code validates, computes weights/weeks/crunch -> agent texts summary and asks missing things one at a time (answers parsed in code).
 - Real Tutor: model writes questions on the syllabus readings, code validates/shuffles, an independent call double-checks keys. Practice rounds (quiz me -> 5 questions, auto-continue), hint / skip / stop / idk handling.
 - Scheduler + Nudger: pure policy in packages/core/src/nudger.ts; reminders ("remind me Sunday to ..."), morning quiz, stakes-scaled nudges with YES/NO, pause/stop/resume. Scheduler runs in DRY mode by default.
 - Dashboard (Next.js): exam cards, mastery bars, timeline, proposals, reminders, thread, /demo controls, /upload, /join (QR).
+- Naming + vibe (tests only, NOT yet tried on the real iPhone): the student names the agent, picks chill / strict / hype, answers one question; rename and vibe change any time. Default name is `DEFAULT_AGENT_NAME` in packages/core/src/naming.ts ("Syl", chosen by the user).
+- "Say hello" control on /demo: the agent texts first (DECISIONS #94).
+- New look ("Study Desk", DECISIONS #95): characters, phone-framed thread with sender labels, scroll-revealed crew tree, "Meet the crew" tabs.
 
 ## Run it
 - Agent: `npm run start -w @syllabus-crew/agent` (127.0.0.1:8787). Dashboard: `npm run dev -w @syllabus-crew/web` (localhost:3000).
-- Secrets only in `.env` and `.data/` (both gitignored). Variable names are in README "Setup". Two secrets: `DEMO_ADMIN_TOKEN` (agent) and `PRESENTER_KEY` (dashboard).
-- Open controls: `open "http://localhost:3000/demo?key=$(grep '^PRESENTER_KEY=' .env | cut -d= -f2)"` (same pattern for /upload).
+- Secrets only in `.env` and `.data/` (both gitignored). Variable names are in README "Setup". The agent needs `DEMO_ADMIN_TOKEN`; the dashboard has no key (it listens on this machine only; DECISIONS #96).
+- Open controls: `open http://localhost:3000/demo` (also linked from the dashboard header).
 - Scheduler: `SCHEDULER=off|dry|on` in .env (default dry = logs only). Set `on` to let it text for real; restart the agent after changing .env.
 - Models: Haiku 4.5 default, Sonnet 4.6 for syllabus/questions (`us.anthropic...` inference-profile IDs; Haiku/Sonnet 5.5 are blocked on this AWS account). Bedrock via IAM keys (long-term API keys are blocked by an account policy).
 - Google: calendar.events scope only; test-mode token expires after ~7 days (reconnect at `http://127.0.0.1:8787/auth/google?token=<DEMO_ADMIN_TOKEN>` the week of the event).

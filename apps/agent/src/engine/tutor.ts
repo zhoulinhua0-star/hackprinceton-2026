@@ -1,4 +1,4 @@
-import { canSend, gradeChoice, rankTopics, rollCounters, topicLabel, updateMastery, weekdayName } from "@syllabus-crew/core";
+import { canSend, gradeChoice, rankTopics, rollCounters, topicLabel, updateMastery, voice, weekdayName } from "@syllabus-crew/core";
 import type { Choice, Question } from "@syllabus-crew/core";
 import { bypassFor, safeText, sleep, type Ctx } from "./ctx.ts";
 import { onMasteryChange } from "./planner.ts";
@@ -77,7 +77,7 @@ export async function answerQuiz(ctx: Ctx, choice: Choice | "unknown"): Promise<
     state.askedQuestionIds.push(q.id);
     resolved = true;
     if (state.session) { state.session.answered += 1; if (pq.attempts === 1) state.session.firstTry += 1; }
-    await ctx.say(`Correct! ${q.explanation}`, "tutor");
+    await ctx.say(`${voice(state.vibe).correct} ${q.explanation}`, "tutor");
   } else if (pq.attempts === 1) {
     await ctx.commit(); // the dashboard mastery bar drops now, before the follow-up is written
     const leak = (t: string) => !t.toLowerCase().includes(q.choices[q.correct].toLowerCase());
@@ -86,7 +86,7 @@ export async function answerQuiz(ctx: Ctx, choice: Choice | "unknown"): Promise<
       `Question: ${q.prompt}\nChoices: A) ${q.choices.A} B) ${q.choices.B} C) ${q.choices.C}\n${choice === "unknown" ? "The student said they don't know." : `The student answered ${choice}.`} Ask one Socratic question.`,
       q.socratic, leak,
     );
-    await ctx.say(`Not quite. ${follow}`, "tutor");
+    await ctx.say(`${voice(state.vibe).miss} ${follow}`, "tutor");
   } else {
     state.pendingQuiz = undefined;
     state.askedQuestionIds.push(q.id);

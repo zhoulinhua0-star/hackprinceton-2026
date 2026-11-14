@@ -1,7 +1,7 @@
 // The scheduler's work for one student: deliver reminders, send the morning quiz, make at most one nudge.
 // Every decision comes from the policy in core; this file only carries it out and keeps the record.
 import { NUDGE, decideMorningQuiz, decideNudge, inQuietHours, localDay, rollCounters, topicLabel } from "@syllabus-crew/core";
-import type { NudgeCandidate } from "@syllabus-crew/core";
+import type { NudgeCandidate, Vibe } from "@syllabus-crew/core";
 import type { Ctx } from "./ctx.ts";
 import { sendQuiz } from "./tutor.ts";
 
@@ -12,8 +12,19 @@ export interface TickResult { actions: TickAction[] }
 const pct = (w: number) => `${Math.round(w * 100)}%`;
 const dueIn = (days: number) => (days <= 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`);
 
-export function nudgeText(c: NudgeCandidate, topicName?: string): string {
+export function nudgeText(c: NudgeCandidate, topicName?: string, vibe?: Vibe): string {
   const head = `${c.examName} is due ${dueIn(c.days)}${c.weight >= 0.01 ? ` (${pct(c.weight)} of your grade)` : ""}`;
+  const at = `${Math.round((c.mastery ?? 0.5) * 100)}% on ${topicLabel(topicName ?? "this topic")}`;
+  if (vibe === "strict") {
+    if (c.kind === "deadline") return `${head}. Start now.`;
+    if (c.kind === "mastery") return `${head}. You're at ${at}. That's not enough. ${NUDGE_ROUND} questions now? Reply YES or NO.`;
+    return `${head}. ${NUDGE_ROUND} questions now, no excuses? Reply YES or NO.`;
+  }
+  if (vibe === "hype") {
+    if (c.kind === "deadline") return `Heads up! ${head}. You've got this.`;
+    if (c.kind === "mastery") return `${head}, and you're at ${at}. Let's fix that! Quick ${NUDGE_ROUND}-question round? Reply YES or NO.`;
+    return `${head}. Let's stay ahead! Quick ${NUDGE_ROUND}-question round? Reply YES or NO.`;
+  }
   if (c.kind === "deadline") return `Heads up: ${head}.`;
   if (c.kind === "mastery") return `${head}, and you're at ${Math.round((c.mastery ?? 0.5) * 100)}% on ${topicLabel(topicName ?? "this topic")}. Want a quick ${NUDGE_ROUND}-question round on it? Reply YES or NO.`;
   return `${head}. Want a quick ${NUDGE_ROUND}-question round to stay ahead? Reply YES or NO.`;
@@ -53,7 +64,7 @@ export async function tick(ctx: Ctx, o: TickOptions = {}): Promise<TickResult> {
   const d = decideNudge(state, now, tz, { force: o.force });
   if (!d.send) return { actions: [...actions, { kind: "skip", sent: false, reason: `nudge: ${d.reason}` }] };
   const c = d.candidate;
-  const text = nudgeText(c, state.topics.find((t) => t.id === c.topicId)?.name);
+  const text = nudgeText(c, state.topics.find((t) => t.id === c.topicId)?.name, state.vibe);
   if (o.dryRun) return { actions: [...actions, { kind: "nudge", sent: false, text, reason: `${c.kind}, score ${c.score.toFixed(3)}` }] };
   state.nudges.push({ at: now.toISOString(), kind: c.kind, key: c.key });
   state.counters = rollCounters(state.counters, now, tz);

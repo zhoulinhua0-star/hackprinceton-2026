@@ -1,5 +1,5 @@
 import { isAmbiguous, isDontKnow, isHintRequest, isUnsure, parseReply, rankTopics, daysUntil, inQuietHours, parseReminder, formatWhen } from "@syllabus-crew/core";
-import { describe } from "@syllabus-crew/core";
+import { describe, DEFAULT_AGENT_NAME, PRODUCT_NAME, isNameQuestion, parseNameAnswer, parseRename, parseVibe, parseVibeCommand, voice } from "@syllabus-crew/core";
 import { writeQuestions } from "./questions.ts";
 import type { TopicJob } from "./questions.ts";
 import type { CalendarWriter, ParsedSyllabus, StudentState } from "@syllabus-crew/core";
@@ -74,6 +74,9 @@ export class Crew {
       if (state.pendingOffer && new Date(state.pendingOffer.expiresAt).getTime() <= this.deps.clock.now().getTime()) state.pendingOffer = undefined;
       if (msg.hasImage) return this.onImage(ctx);
       const text = (msg.text ?? "").trim();
+      // 0. First contact: the agent says who it is and asks for a name, then a vibe. Anything that isn't an answer falls through.
+      if (state.pendingName && (await this.onNaming(ctx, text))) return;
+      if (this.isFirstContact(state)) return this.greet(ctx);
       const reply = parseReply(text);
       const proposal = pendingProposal(ctx);
 
@@ -120,6 +123,11 @@ export class Crew {
       if ((reply.kind === "yes" || reply.kind === "no") && !proposal) return ctx.say("Nothing to confirm right now.", "clarify");
 
       // 3. Free text.
+      const renamed = parseRename(text);
+      if (renamed) { state.agentName = renamed; return ctx.say(`Done. Call me ${renamed}.`, "naming"); }
+      const vibe = parseVibeCommand(text);
+      if (vibe) { state.vibe = vibe; return ctx.say(voice(vibe).picked, "naming"); }
+      if (isNameQuestion(text)) return ctx.say(`I'm ${this.nameOf(state)}, your personal agent from ${PRODUCT_NAME}. Say "call yourself ..." to rename me.`, "naming");
       const prefs = this.prefsCommand(ctx, text);
       if (prefs) return ctx.say(prefs, "prefs");
       const rem = parseReminder(text, this.deps.clock.now(), this.deps.tz);
@@ -141,8 +149,73 @@ export class Crew {
       }
       if (/\b(focus|prioriti[sz]e)\b|what should i (study|work on)/i.test(text)) return ctx.say(this.focusSummary(state), "focus");
       const small = await safeText(this.deps, "smalltalk", "crew-lead", text,
-        "I'm here. I'll text you quiz questions on what's coming up, and I'll ask before I change your calendar.");
+        "I'm here. I'll text you quiz questions on what's coming up, and I'll ask before I change your calendar.", () => true,
+        `\n\nYour name is ${this.nameOf(state)}. You are the student's personal agent from ${PRODUCT_NAME}. Tone: ${state.vibe ?? "chill"}.`);
       return ctx.say(small, "smalltalk");
+    });
+  }
+
+  // ---------- naming ----------
+  private nameOf(state: StudentState): string { return state.agentName ?? DEFAULT_AGENT_NAME; }
+
+  /** A brand-new thread: nothing parsed, nothing said yet. A photo first skips this (the name stays the default). */
+  private isFirstContact(state: StudentState): boolean {
+    return !state.agentName && !state.pendingName && state.phase === "day1" && !state.parsed && !state.messages.some((m) => m.dir === "out");
+  }
+
+  private greet(ctx: Ctx): Promise<void> {
+    ctx.state.pendingName = { step: "name", tries: 0 };
+    return ctx.say(`Hey! I'm your personal agent from ${PRODUCT_NAME}, built for students. I read your syllabus, quiz you by text, and ask before I touch your calendar.\n\nFirst: what do you want to call me? (Say skip and I'll go by ${DEFAULT_AGENT_NAME}.)`, "naming");
+  }
+
+  /** Handles a reply to the name or vibe question. Returns false when the text is something else, so it is handled normally. */
+  private async onNaming(ctx: Ctx, text: string): Promise<boolean> {
+    const { state } = ctx;
+    const p = state.pendingName!;
+    // A command, a question, or a bare YES / A / B / C is not a name: keep the default and handle it normally.
+    const isCommand = /\b(quiz me|remind me|focus|help)\b|\?\s*$/i.test(text) || ["yes", "choice"].includes(parseReply(text).kind);
+    if (p.step === "name") {
+      const a = isCommand ? ({ kind: "unclear" } as const) : parseNameAnswer(text);
+      if (a.kind === "unclear" && !isCommand && p.tries === 0) {
+        p.tries = 1;
+        await ctx.say(`Just a name, up to 20 characters. Or say skip and I'll go by ${DEFAULT_AGENT_NAME}.`, "naming");
+        return true;
+      }
+      if (a.kind === "unclear") { state.pendingName = undefined; return false; } // stays the default; treat the text as a normal message
+      if (a.kind === "name") state.agentName = a.name;
+      state.pendingName = { step: "vibe", tries: 0 };
+      await ctx.say(`${this.nameOf(state)} it is. How should I talk to you? Reply CHILL, STRICT or HYPE.`, "naming");
+      return true;
+    }
+    const passed = /^(skip|idk|i don'?t know|dunno|whatever|none|nothing|you (pick|choose|decide)|default)\W*$/i.test(text);
+    if (p.step === "vibe") {
+      const v = parseVibe(text);
+      if (!v && !passed) { state.pendingName = undefined; return false; } // stays chill; treat the text as a normal message
+      state.vibe = v ?? "chill";
+      state.pendingName = { step: "focus", tries: 0 };
+      await ctx.say(`${voice(state.vibe).picked} Last one: which class worries you most this semester?`, "naming");
+      return true;
+    }
+    // The one open question. Their own words are kept; a command, a rename or a vibe change is handled normally instead.
+    state.pendingName = undefined;
+    if (isCommand || parseRename(text) || parseVibeCommand(text) || isNameQuestion(text) || !text) return false;
+    if (!passed) state.focusCourse = text.replace(/\s+/g, " ").slice(0, 60);
+    const next = state.parsed ? "I'll keep an eye on it." : `Text me a photo of ${passed ? "a" : "that"} syllabus and I'll take it from there.`;
+    await ctx.say(`${passed ? "No problem." : "Noted."} ${next}`, "naming");
+    return true;
+  }
+
+  /**
+   * The agent texts first. Only for someone who asked for it (the presenter's "Say hello" control, later a sign-up
+   * form), and only into a thread Photon already knows.
+   */
+  async startOnboarding(id: string): Promise<{ sent: boolean; reason?: string }> {
+    return this.run(id, async () => {
+      const ctx = (await this.open(id, true))!;
+      if (!ctx.state.route) return { sent: false, reason: "no thread yet: text the line once so there is a thread to reply in" };
+      ctx.state.openedByStudent = true; // opted in
+      await this.greet(ctx);
+      return { sent: true };
     });
   }
 
@@ -182,6 +255,7 @@ export class Crew {
 
   private async onImage(ctx: Ctx): Promise<void> {
     const { state, deps } = ctx;
+    state.pendingName = undefined; // a photo instead of a name: keep the default name and get to work
     if (state.phase === "day1" && !state.parsed) {
       // Staged: the stored parse for the demo syllabus photo, not Textract + the LLM.
       const p = stagedParse(deps.clock.now(), deps.tz);
@@ -230,6 +304,7 @@ export class Crew {
       const state = day1State(id, true);
       state.route = prev.route;
       state.messages = prev.messages;
+      state.agentName = prev.agentName; state.vibe = prev.vibe; // the name belongs to the thread, not the semester
       state.phase = "live"; state.parsed = true; state.syllabus = parsed; state.syllabusHash = hash;
       const ctx = makeCtx(this.deps, state);
       const { patch, missing } = refresh(state, this.deps.tz);
@@ -337,6 +412,7 @@ export class Crew {
       const next = week6State(id, this.deps.clock.now(), prev?.openedByStudent ?? false, this.deps.tz);
       next.messages = prev?.messages ?? [];
       next.route = prev?.route; // the Photon route belongs to the thread, not the demo state
+      next.agentName = prev?.agentName; next.vibe = prev?.vibe;
       await this.deps.store.save(next);
     });
   }

@@ -1,10 +1,13 @@
 # Demo script: Syllabus Crew (2 minutes, stage)
 
-Setup before you walk up: agent and dashboard running, `/demo` open on the laptop (presenter key), iPhone mirrored via QuickTime, thread open to the line (+1 628 502 3837), Google Calendar open on the exam week, Wi-Fi tested.
+Setup before you walk up: agent and dashboard running, `/demo` open on the laptop (no key needed), iPhone mirrored via QuickTime, thread open to the line (+1 628 502 3837), Google Calendar open on the exam week, Wi-Fi tested.
 Fallback if anything stalls: play the backup video, say "same flow, recorded earlier".
 
 ## Reset (before every run)
 1. `/demo` -> **Reset demo**. Wait for the confirmation. The dashboard thread clears and Google Calendar loses any events from the last run.
+
+## Optional opening (not rehearsed yet): the agent texts first
+After Reset, press **Say hello** on `/demo`. The agent introduces itself and asks for a name, then a vibe (CHILL / STRICT / HYPE), then which class worries you most. Then send the photo as in beat 1. Skip this and start at beat 1 if time is short: a photo first works exactly as rehearsed.
 
 ## Beats (what you do -> what the room sees -> what you say)
 

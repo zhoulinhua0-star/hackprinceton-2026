@@ -7,3 +7,4 @@ export * from "./answers.ts";
 export * from "./questions.ts";
 export * from "./reminders.ts";
 export * from "./nudger.ts";
+export * from "./naming.ts";

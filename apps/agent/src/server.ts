@@ -137,6 +137,7 @@ createServer(async (req, res) => {
       const r = await crew.tickStudent(student, { force: url.searchParams.get("force") === "1", dryRun: url.searchParams.get("dry") === "1" });
       return send(200, { ok: true, actions: r?.actions ?? [] });
     }
+    if (route === "POST /api/demo/hello") return send(200, await crew.startOnboarding(student));
     if (route === "POST /api/demo/reset") return send(200, { ok: true, ...(await crew.resetDemo(student)) });
     if (route === "POST /api/syllabus") {
       const body = (await readJson(req)) as { files?: { mediaType?: unknown; base64?: unknown }[] };

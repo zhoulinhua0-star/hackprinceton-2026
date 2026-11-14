@@ -55,7 +55,7 @@ Real: iMessage via Photon, the router, grading/mastery/priority, Socratic follow
 
 Staged for the demo (so the loop never depends on live parsing): the syllabus photo's parse is a stored result, "Scout finds the slides" reads a pre-loaded inbox, and the quiz questions are hand-written seed data.
 
-Real, but not part of the staged stage demo: **upload a real syllabus** (PDF or page images) at `/upload?key=<PRESENTER_KEY>`. Claude reads it, code validates it and does the math (weights, week-to-date, crunch weeks), the agent texts what it found and asks about anything missing, one question at a time, and understands date and percent answers in code.
+Real, but not part of the staged stage demo: **upload a real syllabus** (PDF or page images) at `/upload`. Claude reads it, code validates it and does the math (weights, week-to-date, crunch weeks), the agent texts what it found and asks about anything missing, one question at a time, and understands date and percent answers in code.
 
 For a real syllabus the Tutor writes its own questions on the readings that feed your next assignments. The model writes only the words; code validates the format, shuffles the A/B/C order and grades the answers, and a second independent model call must pick the same answer or the question is thrown away. Questions come from the model's knowledge of standard works, not the text itself, so a syllabus whose readings are obscure gets weaker questions.
 
@@ -77,7 +77,7 @@ npm run start -w @syllabus-crew/agent   # the real agent (Photon + Bedrock + Goo
 npm run dev   -w @syllabus-crew/web     # dashboard at http://localhost:3000
 ```
 
-Open `/join` on the dashboard for a QR code that opens Messages with the first text pre-filled. Presenter controls live at `/demo?key=<PRESENTER_KEY>` (a separate secret from the agent's `DEMO_ADMIN_TOKEN`). Both servers listen on this machine only.
+Open `/join` on the dashboard for a QR code that opens Messages with the first text pre-filled. Presenter controls live at `/demo`, with no key: the dashboard listens on this machine only, so do not deploy or tunnel it as it is. Both servers listen on this machine only.
 
 ### Setup
 
@@ -86,7 +86,7 @@ Open `/join` on the dashboard for a QR code that opens Messages with the first t
 | **Photon 2.0 beta** project + a shared iMessage line, with the user's number assigned | photon.codes/beta. `PHOTON_PROJECT_ID`, `PHOTON_API_KEY`, `PHOTON_IMESSAGE_LINE` |
 | **AWS Bedrock**, Claude Haiku 4.5 (default) and Sonnet 4.6 enabled in `us-east-1` | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `BEDROCK_MODEL_DEFAULT=us.anthropic.claude-haiku-4-5-20251001-v1:0`, `BEDROCK_MODEL_STRONG=us.anthropic.claude-sonnet-4-6` |
 | **Google Calendar**: OAuth client (Testing mode), `calendar.events` scope only | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=http://localhost:8787/auth/google/callback`. Connect once at `/auth/google?token=<DEMO_ADMIN_TOKEN>` on the agent |
-| **Demo** | `DEMO_ADMIN_TOKEN` and `PRESENTER_KEY` (two different long random strings), `DEMO_STUDENT` (the demo phone number), `DEMO_MODE=true` (bypasses quiet hours and caps for the demo student only), `STUDENT_TIMEZONE`, `AGENT_PORT`, `AGENT_URL`, `DASHBOARD_URL` |
+| **Demo** | `DEMO_ADMIN_TOKEN` (a long random string), `DEMO_STUDENT` (the demo phone number), `DEMO_MODE=true` (bypasses quiet hours and caps for the demo student only), `STUDENT_TIMEZONE`, `AGENT_PORT`, `AGENT_URL`, `DASHBOARD_URL` |
 
 Secrets live only in `.env` and `.data/` (both gitignored). The dashboard talks to the agent through server-side routes, so the browser never sees the agent URL or the token.
 

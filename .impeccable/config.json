@@ -44,6 +44,15 @@
         ],
         "createdAt": "2026-11-15T00:55:05.569Z",
         "reason": "user requested the moving services strip (Nov 14, modeled on a reference page); every service is also listed statically below it, hover pauses it, reduced motion stops it"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "apps/cards/app/cards.css"
+        ],
+        "createdAt": "2026-11-15T01:11:26.116Z",
+        "reason": "Claude triage: L68 is a 2px quote-style rule beside a quiz answer explanation inside a list row, not a thick accent border on a card; existing shipped design"
       }
     ]
   }

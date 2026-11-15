@@ -37,7 +37,7 @@ Nov 14 evening: /join + QR deleted (#109); seat command, TESTERS, per-person lin
 2. Still open for the page: demo video link (content.js videoUrl) and interview quotes (content.js interviews), both from the user. Pitch deck (competitor slide with UpAhead + Meta Muse/Instinct as on the page, architecture, AWS stack: Bedrock live, DynamoDB built but blocked by the event account's org policy; voice drills; evidence from hacker interviews).
 3. No judge QR (#109, /join deleted). The demo runs on the builder's phone. A judge who wants to try it gets a seat added by hand (createSharedLineAssignment via Photon MCP), and then texts the line Photon assigns.
 4. Later: rotate the Photon outbound SIP password (it appeared in a screenshot in chat) and update ElevenLabs.
-- Rehearse the new PDF beat 1 of DEMO-SCRIPT.md again (runs 1-3 used the photo). No backup video (user decision).
+- Rehearse the new PDF beat 1 of DEMO-SCRIPT.md again (runs 1-3 used the photo). No backup video for the stage (user decision). The walk-through video for the page and the submission is planned shot by shot in `VIDEO-SCRIPT.md` (all on the iPhone, voiceover, about 2 min).
 - DynamoDB: SKIPPED (#99): code works (`STORE=dynamo`), but an AWS Organizations service control policy denies DynamoDB on the event account.
 
 ## Repo

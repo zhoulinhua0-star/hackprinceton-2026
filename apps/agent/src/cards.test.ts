@@ -221,16 +221,15 @@ test("Week 6 round: questions say 'Question n of 5', not 'Quick one'", async () 
   assert.match(s.last(), /^Question 1 of \d · /);
 });
 
-test("after 'stop', answering the open question offers nothing more", async () => {
+test("after 'stop', the open question is dropped and nothing more is offered", async () => {
   const s = setup();
   await s.crew.onInbound(ME, { hasImage: true, route: ROUTE });
   await s.crew.switchToWeek6(ME);
   await s.say("quiz me");
   await s.say("stop");
   const st = (await s.store.load(ME))!;
-  await s.say(st.questions.find((x) => x.id === st.pendingQuiz!.questionId)!.correct);
-  assert.match(s.last(), /^Correct!/);
-  assert.equal((await s.store.load(ME))!.pendingOffer, undefined);
+  assert.equal(st.pendingQuiz, undefined);
+  assert.equal(st.pendingOffer, undefined);
 });
 
 // ---------- #108: the conversation keeps moving after YES/NO; proposals never interrupt a round ----------

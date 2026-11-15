@@ -3,7 +3,7 @@
 HackPrinceton Fall 2026. Tracks: Photon iMessage, Amazon "Best Practical AI", Education.
 Everything here is checked against the code. Items marked **[YOU]** are facts only you can fill in. Say a claim on stage only if the demo shows it or the code does it.
 
-The stage beats are in `DEMO-SCRIPT.md`. This file covers what to *say*, the deck, the "on your phone" step at the table, and judges' questions.
+The stage beats are in `DEMO-SCRIPT.md`; the 2-minute walk-through video is shot by shot in `VIDEO-SCRIPT.md`. This file covers what to *say*, the deck, the "on your phone" step at the table, and judges' questions.
 
 ---
 

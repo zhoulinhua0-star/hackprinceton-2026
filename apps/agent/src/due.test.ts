@@ -90,3 +90,33 @@ test("YES to a round offer with no questions yet starts the writer instead of a 
   await s.crew.onInbound(ME, { text: "yes" });
   assert.match(s.last(), /writing your (first )?questions/);
 });
+
+test("quitting a quiz in plain words stops it; it never re-sends the question", async () => {
+  const s = await setup();
+  const st = (await (s.crew as any).deps.store.load(ME))!;
+  st.questions = [{ id: "q1", topicId: st.topics[0].id, prompt: "Why?", choices: { A: "a", B: "b", C: "c" }, correct: "A", explanation: "Because.", socratic: "Think?" }];
+  st.unlockedQuestionIds = ["q1"];
+  await (s.crew as any).deps.store.save(st);
+  for (const quit of ["Quit the quiz", "No longer gonna do the quiz", "Stop the quiz.", "stop", "I'm done with this"]) {
+    await s.crew.onInbound(ME, { text: "Write me a quiz" });
+    assert.match(s.last(), /^Question 1 of/, quit);
+    await s.crew.onInbound(ME, { text: quit });
+    assert.equal(s.last(), `Okay, stopped. Say "quiz me" whenever you want more.`, quit);
+    const after = (await (s.crew as any).deps.store.load(ME))!;
+    assert.equal(after.pendingQuiz, undefined);
+    assert.equal(after.session, undefined);
+  }
+  await s.crew.onInbound(ME, { text: "stop nudging me" });
+  assert.doesNotMatch(s.last(), /Okay, stopped/); // the pause command, not a quiz quit
+});
+
+test("'skip this question' still skips, it doesn't quit", async () => {
+  const s = await setup();
+  const st = (await (s.crew as any).deps.store.load(ME))!;
+  st.questions = ["q1", "q2"].map((id) => ({ id, topicId: st.topics[0].id, prompt: `Why ${id}?`, choices: { A: "a", B: "b", C: "c" }, correct: "A", explanation: "Because.", socratic: "Think?" }));
+  st.unlockedQuestionIds = ["q1", "q2"];
+  await (s.crew as any).deps.store.save(st);
+  await s.crew.onInbound(ME, { text: "quiz me" });
+  await s.crew.onInbound(ME, { text: "skip this question" });
+  assert.doesNotMatch(s.last(), /Okay, stopped/);
+});

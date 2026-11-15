@@ -43,8 +43,19 @@ const isQuizRequest = (t: string) => {
   const s = t.trim();
   if (/\bquiz me\b|another (one|question)|next question|^(next|more|again|keep going|go on|continue)\W*$|\bwhere('?s| is) (my|the) (quiz|question)|^(a )?quiz\W*$/i.test(s)) return true;
   if (isDueQuestion(s) || /\b(when|due|date|deadline)\b/i.test(s)) return false; // a question about a quiz on the syllabus
-  return /\b(quiz|test) me\b|\b(quiz|quizzes|practice (questions?|problems?)|practice round|questions? (for|to) me|ask me (a |some )?questions?)\b/i.test(s)
-    && /\b(give|send|start|write|make|create|generate|want|need|get|can|could|let'?s|do|try|run|ask|quiz|test|practice)\b/i.test(s);
+  if (isQuitRequest(s)) return false;
+  if (/\b(quiz|test) me\b|\bask me (a |some )?questions?\b/i.test(s)) return true;
+  return /\b(quiz|quizzes|practice (questions?|problems?)|practice round|questions? for me)\b/i.test(s)
+    && /\b(give|send|start|write|make|create|generate|want|need|get|can|could|let'?s|do|try|run|have)\b/i.test(s);
+};
+
+/** Leaving a quiz: "stop", "quit the quiz", "I'm done", "no longer gonna do the quiz", "not now". */
+const isQuitRequest = (t: string) => {
+  const s = t.trim();
+  if (/^(stop|quit|exit|cancel|end( it)?|enough|that'?s (all|enough)|no more|i'?m done|done|not now|later|pause)\W*$/i.test(s)) return true;
+  return /\b(stop|quit|end|cancel|exit|leave|drop|done with|no longer|not (gonna|going to|doing)|don'?t want|do not want|no more|enough( of)?)\b/i.test(s)
+    && /\b(quiz|quizzes|questions?|round|this|it|practice)\b/i.test(s)
+    && !/\b(nudg|remind|text(ing)? me|messag|ping)/i.test(s); // "stop nudging me" is the pause command
 };
 
 /** A short text that only makes sense next to a file: "check it", "here's my syllabus". */
@@ -144,7 +155,12 @@ export class Crew {
       if (needsAnswer(state) && !state.pendingQuiz && (await tryAnswerAsk(ctx, text))) return refreshSemester(ctx); // the card shows the fix; no new link
 
       // 2b. Leaving a practice round, or passing on a question.
-      if (state.session && /^(stop|enough|that'?s (all|enough)|no more|i'?m done|done|end)\W*$/i.test(text)) { state.session = undefined; return ctx.say(`Okay, that's enough for now. Say "quiz me" whenever you want more.`, "tutor"); }
+      // Any way of saying it ("stop", "quit the quiz", "no longer gonna do the quiz"); the open question is dropped too, not graded.
+      if ((state.session || state.pendingQuiz) && isQuitRequest(text)) {
+        state.session = undefined;
+        state.pendingQuiz = undefined; // never asked, so it can come back another time; mastery is untouched
+        return ctx.say(`Okay, stopped. Say "quiz me" whenever you want more.`, "tutor");
+      }
       // Tutoring while a question is open: giving up counts as a miss (hint first, answer on the second), a hint request is free.
       if (state.pendingQuiz && (isDontKnow(text) || (!proposal && isUnsure(text)))) return answerQuiz(ctx, "unknown");
       if (state.pendingQuiz && isHintRequest(text)) {

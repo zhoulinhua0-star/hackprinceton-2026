@@ -80,14 +80,16 @@ test("two misses reveal the answer and the round moves on", async () => {
   assert.match(s.last(), /^Question 2 of 5 · /);
 });
 
-test("'stop' leaves the round; the open question can still be answered, without a new one following", async () => {
+test("'stop' leaves the round and drops the open question; 'quiz me' starts fresh", async () => {
   const s = await setup();
   await s.crew.onInbound(ME, { text: "quiz me" });
   await s.crew.onInbound(ME, { text: "stop" });
-  assert.equal(s.last(), `Okay, that's enough for now. Say "quiz me" whenever you want more.`);
-  assert.equal((await s.store.load(ME))!.session, undefined);
-  await s.crew.onInbound(ME, { text: (await pending(s)).right });
-  assert.match(s.last(), /^Correct! /); // nothing after it
+  assert.equal(s.last(), `Okay, stopped. Say "quiz me" whenever you want more.`);
+  const st = (await s.store.load(ME))!;
+  assert.equal(st.session, undefined);
+  assert.equal(st.pendingQuiz, undefined);
+  await s.crew.onInbound(ME, { text: "quiz me" });
+  assert.match(s.last(), /^Question 1 of 5 · /);
 });
 
 test("'skip' passes on a question and, in a round, the next one arrives", async () => {

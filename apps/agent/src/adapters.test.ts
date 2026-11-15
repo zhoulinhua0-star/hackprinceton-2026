@@ -7,6 +7,7 @@ import { FakeMessenger } from "@syllabus-crew/core";
 import { day1State, week6State } from "./seed.ts";
 import { FileStore } from "./adapters/file-store.ts";
 import { findMessages, sniff, toAttachment, toInbound } from "./adapters/photon.ts";
+import { VOICE_NO_TRANSCRIPT } from "./engine/crew.ts";
 
 // Shapes copied from real events logged on the live line (ids shortened).
 const space = { id: "pho_spc_2stm", kind: "direct", participantIds: [] };
@@ -31,6 +32,19 @@ test("toInbound: a photo is flagged as an image", () => {
   const m = toInbound(photo)!;
   assert.equal(m.hasImage, true);
   assert.equal(m.text, undefined);
+});
+
+test("toInbound: a voice note is its transcript, and a 'group' of parts is joined (real phone, Nov 15: both were dropped)", () => {
+  const voice = { ...text, id: "pho_msg_0dqy", content: { attachmentId: "pho_att_6qva", type: "voice", metadata: { voice: { transcript: "So what should I be focusing on this week?" } } } };
+  assert.equal(toInbound(voice)!.text, "So what should I be focusing on this week?");
+  assert.equal(toInbound(voice)!.hasImage, false);
+  assert.equal(toInbound({ ...voice, content: { type: "voice", attachmentId: "pho_att_6qva" } })!.text, VOICE_NO_TRANSCRIPT);
+  const group = { ...text, id: "pho_msg_0b4e", content: { type: "group", parts: [
+    { format: "plain", text: "So what should I be focusing on ", type: "text" }, { format: "plain", text: "this week", type: "text" }] } };
+  assert.equal(toInbound(group)!.text, "So what should I be focusing on this week");
+  const withFile = { ...group, content: { type: "group", parts: [{ type: "text", text: "check it" }, { type: "attachment", attachmentId: "pho_att_9zz" }] } };
+  assert.deepEqual([toInbound(withFile)!.hasImage, toInbound(withFile)!.attachmentId, toInbound(withFile)!.text], [true, "pho_att_9zz", undefined]);
+  assert.equal(toInbound({ ...group, content: { type: "group", parts: [{ type: "reaction" }] } }), undefined);
 });
 
 test("toInbound ignores our own messages, groups, other platforms and unsupported content", () => {

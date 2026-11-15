@@ -151,6 +151,7 @@ export function topicLabel(name: string, max = 46): string {
     .replace(/,?\s*(pp?\.?|books?|lines?|chapters?|ch\.|cantos?|sections?)\s*\d.*$/i, "")
     .replace(/,?\s+\d[\d\s,–-]*$/, "") // a bare trailing page range: "Said, Orientalism, 226-328"
     .replace(/\s+through\s+.*$/i, "")
+    .replace(/[\s:;,–-]+$/, "") // what was left before a removed range: "Poems: 1, 6, 20" -> "Poems"
     .trim() || name.trim();
   if (t.length > max) t = `${t.slice(0, max - 1).trim()}…`;
   return t;

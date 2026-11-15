@@ -123,7 +123,7 @@ export async function offerTheRest(ctx: Ctx, topicId: string): Promise<void> {
   const topic = fresh.some((q) => q.topicId === topicId) ? state.topics.find((t) => t.id === topicId) : undefined;
   const n = Math.min(fresh.length, NUDGE_ROUND);
   state.pendingOffer = { kind: "round", ...(fresh.some((q) => q.topicId === topicId) ? { topicId } : {}), expiresAt: new Date(deps.clock.now().getTime() + 2 * 3_600_000).toISOString() };
-  await ctx.say(`${n === 1 ? "One more is" : `${n} more are`} ready${topic ? ` on ${topic.short}` : ""}. Want ${n === 1 ? "it" : "them"}? Reply YES.`, "tutor");
+  await ctx.say(`${n === 1 ? "One more is" : `${n} more are`} ready${topic ? ` on ${topicLabel(topic.name)}` : ""}. Want ${n === 1 ? "it" : "them"}? Reply YES.`, "tutor");
 }
 
 /**

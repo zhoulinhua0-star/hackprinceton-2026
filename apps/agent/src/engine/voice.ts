@@ -106,7 +106,7 @@ export async function gradeDrill(llm: LLM, d: Drill, status: CallStatus): Promis
   if (ok) return ok;
   const covered = keywordGrade(d.keyPoints, said);
   const missed = d.keyPoints.filter((_, i) => !covered.includes(i));
-  return { covered, feedback: missed.length ? `Good effort. Next time, cover: ${missed[0]}.` : "You covered every key point." };
+  return { covered, feedback: missed.length ? `${covered.length ? "Good start. " : ""}Next time, cover: ${missed[0]!.replace(/[.\s]+$/, "")}.` : "You covered every key point." };
 }
 
 /** Records how a finished (or failed) call went and texts the recap. `graded` is computed outside the lock. */

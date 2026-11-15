@@ -205,7 +205,7 @@ window.TRACKS = {
   "Amazon · Best Practical AI": [
     "Claude on Amazon Bedrock with two models picked per task: Sonnet 4.6 for reading syllabi and writing questions, Haiku 4.5 for chat.",
     "The model writes words; grading, mastery, priority and timing are code, so the numbers are never invented.",
-    "A practical safety story: YES-gated writes, quiet hours, daily limits, all enforced in code and tested (247 tests).",
+    "A practical safety story: YES-gated writes, quiet hours, daily limits, all enforced in code and tested (250 tests).",
     "An Amazon DynamoDB store is built and switchable; the event account's policy blocked it, so state stays in a file for the demo.",
   ],
   // [lead-in, text]: the track asks for personal, interactive and accessible, so the tab leads with those words.
@@ -243,7 +243,7 @@ window.ORIGINALS = [
   ["The YES gate", "Exactly one path in the code writes to your calendar, and it only runs after your YES. Planner can only propose."],
   ["Voice drills, graded in code", "Reply CALL and explain it out loud. The transcript is checked against key points; mastery moves by a formula, not a vibe."],
   ["A Nudger with hard rules", "9 AM to 8 PM, at most 3 a day, 4 hours apart, never mid-conversation, quiet after 2 ignored. Enforced and tested."],
-  ["Our own crew, no framework", "A router and four sub-agents in our own TypeScript on Claude via Amazon Bedrock, with 247 automated tests."],
+  ["Our own crew, no framework", "A router and four sub-agents in our own TypeScript on Claude via Amazon Bedrock, with 250 automated tests."],
 ];
 
 // The moving strip: [name, badge letter or crew character, color]. Two rows drift in opposite directions.
@@ -252,7 +252,7 @@ window.MARQUEE = [
   [["The crew engine", "lead"], ["Scout", "scout"], ["Tutor", "tutor"], ["Planner", "planner"], ["Nudger", "nudger"], ["Next.js", "N", "#1e2740"], ["Node.js + TypeScript", "T", "#2f6fed"], ["Amazon DynamoDB", "D", "#6d7fb3"], ["node:test", "t", "#2f7a5b"], ["Fraunces + Figtree", "F", "#c8553d"]],
 ];
 // Each stat is true and checkable in the repo.
-window.STATS = [["247", "automated tests"], ["1 + 4", "a lead and four sub-agents"], ["2", "Claude models on Amazon Bedrock"], ["0", "calendar writes without a YES"]];
+window.STATS = [["250", "automated tests"], ["1 + 4", "a lead and four sub-agents"], ["2", "Claude models on Amazon Bedrock"], ["0", "calendar writes without a YES"]];
 
 // Who built it.
 window.BUILDER = { name: "Linhua Zhou", role: "Built Syllabus Crew solo", linkedin: "https://www.linkedin.com/in/linhua-zhou-31948b42b/", photo: "/assets/linhua.jpg" };
@@ -270,7 +270,7 @@ window.SERVICES = [
   ["App", "Next.js", "The live dashboard and the card site"],
   ["App", "Node.js + TypeScript", "The agent and its four specialists"],
   ["Built by us", "The crew engine", "Routing, grading, mastery, priority, Nudger rules"],
-  ["Built by us", "247 automated tests", "Every rule above, checked on fakes"],
+  ["Built by us", "250 automated tests", "Every rule above, checked on fakes"],
 ];
 
 window.NEXT = [

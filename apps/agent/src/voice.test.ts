@@ -157,3 +157,31 @@ test("core: drill math, grade checks, keyword matching, the call window and the 
   assert.equal(toStatus({ status: "done", metadata: { phone_call: { call_result: "no_answer" } }, transcript: [] }).answered, false);
   assert.equal(toStatus({ status: "failed" }).state, "failed");
 });
+
+test("a voice note with no transcript gets a plain answer; the fallback grade has no double period (real phone, Nov 15)", async () => {
+  const s = setup({ grade: { nonsense: true } }); // the model's grade is unusable: the keyword fallback writes the feedback
+  await week6(s);
+  await s.say("[voice message]");
+  assert.equal(s.last(), "I couldn't make out that voice note. Text it to me, or reply CALL and we can talk it through.");
+  await s.say("CALL");
+  const call = s.caller.calls[0]!;
+  s.caller.finish(call.callId, { state: "done", answered: true, durationSecs: 49, transcript: [{ role: "user", text: "idk" }] });
+  await s.crew.checkDrills(ME);
+  const recap = s.msg.sent.find((t) => t.startsWith("Voice drill,"))!;
+  assert.doesNotMatch(recap, /\.\./);
+  assert.match(recap, /Next time, cover: borrowing costs more\./);
+  assert.doesNotMatch(recap, /Good start/, "no praise for 0 points");
+});
+
+test("'what should I be focusing on this week' gets the focus answer in code, even with a proposal waiting (Nov 15)", async () => {
+  const s = setup({ grade: { covered: [], feedback: "Not this time." } });
+  await week6(s);
+  await s.say("CALL");
+  s.caller.finish(s.caller.calls[0]!.callId, { state: "done", answered: true, durationSecs: 49, transcript: [{ role: "user", text: "idk" }] });
+  await s.crew.checkDrills(ME);
+  assert.match(s.last(), /Reply YES or NO\.$/, "the weak drill brought a proposal, as on the phone");
+  await s.say("So what should I be focusing on this week?");
+  assert.match(s.last(), /^Focus on .+: you're at \d+%, and .+ is \d+% of your grade in \d+ days\.$/);
+  await s.say("No"); // the proposal is still the open item
+  assert.ok(s.msg.sent.slice(-2).includes("No problem, I won't add it."));
+});

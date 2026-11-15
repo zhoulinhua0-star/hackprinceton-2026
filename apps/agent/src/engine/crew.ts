@@ -21,6 +21,9 @@ import { advanceSession, answerQuiz, renderQuiz, sendQuiz } from "./tutor.ts";
 import { day1State, stagedParse, week6State } from "../seed.ts";
 
 export interface CrewDeps extends Omit<Deps, "opts"> { calendar: CalendarWriter; opts?: Partial<Opts> }
+/** The text of a voice note the messaging service couldn't transcribe (adapters set it; the engine answers it). */
+export const VOICE_NO_TRANSCRIPT = "[voice message]";
+
 export interface Inbound {
   text?: string; hasImage?: boolean; route?: { spaceId: string; senderId: string; line?: string };
   /** Fetches the texted file (a photo or a PDF) when it is actually needed. Null = not a readable file. */
@@ -131,6 +134,8 @@ export class Crew {
       if (state.pendingOffer && new Date(state.pendingOffer.expiresAt).getTime() <= this.deps.clock.now().getTime()) state.pendingOffer = undefined;
       if (msg.hasImage) return this.onImage(ctx, msg.file);
       const text = (msg.text ?? "").trim();
+      // A voice note Photon couldn't transcribe: say so, never guess at it. (With a transcript, it is handled as text.)
+      if (text === VOICE_NO_TRANSCRIPT) return ctx.say("I couldn't make out that voice note. Text it to me, or reply CALL and we can talk it through.", "clarify");
       // 0. First contact: the agent says who it is and asks for a name, then a vibe. Anything that isn't an answer falls through.
       if (state.pendingName && (await this.onNaming(ctx, text))) return;
       if (this.isFirstContact(state)) return this.greet(ctx);
@@ -222,7 +227,7 @@ export class Crew {
         if (await sendQuiz(ctx, { solicited: true, startSession: this.deps.opts.sessionLength })) return;
         return this.noQuestionsYet(ctx, "I can't send a question right now. Try again a bit later.");
       }
-      if (/\b(focus|prioriti[sz]e)\b|what should i (study|work on)/i.test(text)) return ctx.say(this.focusSummary(state), "focus");
+      if (/\b(focus(ing)?|prioriti[sz](e|ing))\b|what should i (study|work on)/i.test(text)) return ctx.say(this.focusSummary(state), "focus");
       if (isStudyRequest(text)) return proposeOnRequest(ctx, text); // the Planner proposes; only YES books it
       if (isDueQuestion(text)) return ctx.say(dueAnswer(state, text, this.deps.clock.now(), this.deps.tz), "focus"); // dates from the syllabus, in code
       if (isRecapRequest(text)) return this.resendRecap(ctx); // in code: the model once answered this with a made-up "You nailed it!"

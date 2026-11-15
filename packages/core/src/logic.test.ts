@@ -112,6 +112,7 @@ test("FakeCalendar never reuses an id after a delete", async () => {
 
 test("topicLabel: a short readable name for a reading", () => {
   assert.equal(topicLabel("Selections from The Book of Songs"), "The Book of Songs");
+  assert.equal(topicLabel("Selections from The Book of Songs, Poems: 1, 6, 20, 31, 36, 40, 113"), "The Book of Songs, Poems"); // no stray colon (Nov 15)
   assert.equal(topicLabel("Homer, The Odyssey, Books 1–13"), "Homer, The Odyssey");
   assert.equal(topicLabel("Said, Orientalism, pp. 226-328"), "Said, Orientalism");
   assert.equal(topicLabel("Sophocles, Antigone (lines 1–end)"), "Sophocles, Antigone");

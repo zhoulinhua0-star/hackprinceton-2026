@@ -9,9 +9,32 @@ import { promisify } from "node:util";
 import { Photon } from "@photon-ai/api";
 import { io } from "socket.io-client";
 import type { Attachment, Messenger, OutFile, Store } from "@syllabus-crew/core";
-import type { Inbound } from "../engine/crew.ts";
+import { VOICE_NO_TRANSCRIPT, type Inbound } from "../engine/crew.ts";
 
 export interface PhotonInbound extends Inbound { messageId: string; studentId: string; createdAt?: string; attachmentId?: string }
+
+/**
+ * What a message says, across the content types a student's iPhone actually sends (seen Nov 15): plain text, a file,
+ * a voice note (Photon's transcript is the text), and a "group" of parts (text split in two, or text with a file).
+ * A file wins over text in a group, as it does when the two arrive separately. Other types (reactions, read receipts) are skipped.
+ */
+export function readContent(c: any): { text?: string; attachmentId?: string } | undefined {
+  if (!c || typeof c !== "object") return undefined;
+  if (c.type === "text") return typeof c.text === "string" ? { text: c.text } : undefined;
+  if (c.type === "attachment") return typeof c.attachmentId === "string" ? { attachmentId: c.attachmentId } : undefined;
+  if (c.type === "voice") {
+    const t = c.metadata?.voice?.transcript;
+    return { text: typeof t === "string" && t.trim() ? t.trim() : VOICE_NO_TRANSCRIPT };
+  }
+  if (c.type === "group" && Array.isArray(c.parts)) {
+    const parts = c.parts.map(readContent).filter(Boolean) as { text?: string; attachmentId?: string }[];
+    const file = parts.find((p) => p.attachmentId);
+    if (file) return file;
+    const text = parts.map((p) => p.text ?? "").join("").replace(/\s+/g, " ").trim();
+    return text ? { text } : undefined;
+  }
+  return undefined;
+}
 
 /** Pick a human's direct-chat iMessage out of a Photon message object. Anything else returns undefined. */
 export function toInbound(m: any): PhotonInbound | undefined {
@@ -19,15 +42,15 @@ export function toInbound(m: any): PhotonInbound | undefined {
   if (m.platform !== "imessage" || (m.status && m.status !== "received")) return undefined;
   if (m.sentBy?.kind !== "human" || m.space?.kind !== "direct") return undefined;
   if (!m.sentBy?.handle || !m.space?.id || !m.receivedBy?.id) return undefined;
-  const type = m.content?.type;
-  if (type !== "text" && type !== "attachment") return undefined;
+  const c = readContent(m.content);
+  if (!c) return undefined;
   return {
     messageId: m.id,
     ...(typeof m.createdAt === "string" ? { createdAt: m.createdAt } : {}),
     studentId: m.sentBy.handle,
-    text: type === "text" ? m.content.text : undefined,
-    hasImage: type === "attachment",
-    ...(type === "attachment" && typeof m.content.attachmentId === "string" ? { attachmentId: m.content.attachmentId } : {}),
+    text: c.attachmentId ? undefined : c.text,
+    hasImage: !!c.attachmentId,
+    ...(c.attachmentId ? { attachmentId: c.attachmentId } : {}),
     route: { spaceId: m.space.id, senderId: m.receivedBy.id, ...(typeof m.receivedBy.handle === "string" ? { line: m.receivedBy.handle } : {}) },
   };
 }
@@ -144,7 +167,15 @@ export function listen(o: {
   const startedAt = Date.now();
   const handle = async (raw: any, via: string) => {
     const m = toInbound(raw);
-    if (!m || seen.has(m.messageId)) return;
+    if (!m) { // a human's message we can't read is logged once, so nothing is dropped silently again
+      const t = raw?.content?.type;
+      if (raw?.sentBy?.kind === "human" && typeof raw?.id === "string" && t && !["reaction", "message.read", "space.typing.update"].includes(t) && !seen.has(raw.id)) {
+        seen.add(raw.id);
+        log(`skipped inbound ${raw.id}: content type "${t}"`);
+      }
+      return;
+    }
+    if (seen.has(m.messageId)) return;
     seen.add(m.messageId);
     // After a restart the socket might replay old messages; an old YES must never act on whatever is pending now.
     if (isStale(m.createdAt, startedAt)) { log(`ignoring stale message ${m.messageId} from ${m.createdAt}`); return; }

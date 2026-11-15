@@ -115,6 +115,8 @@ export interface StudentState {
   skippedAsks?: string[];
   /** Voice drills: spoken "explain it" calls, newest last. */
   drills?: Drill[];
+  /** The newest recap card (a voice drill or a quiz round), so "where's the recap?" can send it again. */
+  lastRecap?: { kind: "drill" | "round"; url: string; line: string; at: string };
   /** What the student named their agent. Unset = the default name. */
   agentName?: string;
   /** How the agent talks (set phrases only). Unset = chill. */

@@ -137,7 +137,7 @@ After the event: release every seat except yours.
   - It only texts people who texted first.
   - Card pages have no name or phone number and aren't indexed.
   - Your calendar is touched only after a YES, and Reset deletes only events the app made.
-- **Why several agents and not one prompt?** Different jobs, rules and risks. Only the Planner can propose, and only the approve path can write. Each piece is small and tested (233 tests).
+- **Why several agents and not one prompt?** Different jobs, rules and risks. Only the Planner can propose, and only the approve path can write. Each piece is small and tested (247 tests).
 - **Does it spam?** No texts 11pm–8am, at most 3 nudges a day with 4-hour gaps, never mid-conversation, and it backs off after 2 unanswered.
 - **Can it run for real users?** The pieces are real: Photon, Bedrock, Google, Vercel cards. What's missing is hosting off the laptop and per-student Google sign-in.
 

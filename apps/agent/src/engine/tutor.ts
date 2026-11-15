@@ -157,8 +157,11 @@ export async function endSession(ctx: Ctx, lead = ""): Promise<void> {
   const weak = topic && s.answered ? ` Weakest right now: ${topicLabel(topic.name)} (${Math.round((state.mastery[weakest!] ?? 0.5) * 100)}%).` : "";
   const link = s.answered ? await roundLink(ctx, s) : null;
   if (link) { // the detail lives on the card: one short line, then the link
-    await ctx.say(`${lead}That's the round: ${s.firstTry} of ${s.answered} on the first try.`, "tutor");
+    const line = `That's the round: ${s.firstTry} of ${s.answered} on the first try.`;
+    await ctx.say(`${lead}${line}`, "tutor");
     await sendLink(ctx, link);
+    state.lastRecap = { kind: "round", url: link, line, at: ctx.deps.clock.now().toISOString() };
+    await ctx.commit(); // recorded after both texts went out
   } else await ctx.say(`${lead}That's the round. ${score}${weak} Say "quiz me" for another.`, "tutor");
   if (weakest && s.answered) await onMasteryChange(ctx, weakest); // the Planner's turn comes after the recap, never mid-round
 }

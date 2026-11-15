@@ -149,7 +149,7 @@ test("a finished round: one short line, then the round card with the miss explai
   assert.ok(r.mastery.length >= 1);
 });
 
-test("a graded voice drill: the feedback line, then the drill card with the answer; no long recap", async () => {
+test("a graded voice drill: the recap line with the score, then the drill card with the answer; no long recap", async () => {
   const s = setup();
   await s.crew.onInbound(ME, { hasImage: true, route: ROUTE });
   await s.crew.switchToWeek6(ME);
@@ -162,12 +162,30 @@ test("a graded voice drill: the feedback line, then the drill card with the answ
   const link = s.texts().findLast((t) => LINK.test(t))!; // the photo already brought a semester card
   assert.ok(link);
   const i = s.texts().lastIndexOf(link);
-  assert.equal(s.texts()[i - 1], "You nailed the borrowing cost; the missing piece is why fewer projects pay off.");
+  assert.equal(s.texts()[i - 1], "Drill recap: you covered 2 of 3 key points. You nailed the borrowing cost; the missing piece is why fewer projects pay off.");
   const d = s.card<DrillCard>(link);
   assert.deepEqual([d.covered, d.missed], [["borrowing costs more", "investment falls"], ["fewer projects pay off"]]);
   assert.equal(d.answer, "borrowing costs more. fewer projects pay off. investment falls.");
   assert.equal(d.durationSecs, 161);
   assert.ok(!s.texts().some((t) => t.startsWith("Voice drill,")));
+
+  // "Where it the recap" (real phone, Nov 15): sent again in code, not answered by the model from the last quiz question.
+  const llm = (s.crew as unknown as { deps: { llm: FakeLLM } }).deps.llm;
+  const chats = llm.calls.filter((c) => c.task === "smalltalk").length;
+  await s.say("Where it the recap");
+  assert.equal(s.last(), link);
+  assert.equal(s.texts().at(-2), "Here's the recap from your last voice drill. Drill recap: you covered 2 of 3 key points. Tap it for the answer and the points you missed.");
+  assert.equal(llm.calls.filter((c) => c.task === "smalltalk").length, chats, "no model call");
+  // And free chat knows how the drill really went.
+  await s.say("was that call good?");
+  assert.match(llm.calls.filter((c) => c.task === "smalltalk").at(-1)!.user, /covered 2 of 3 key points\. Missed: fewer projects pay off/);
+});
+
+test("'where is the recap' before any drill or round: says how to get one", async () => {
+  const s = setup();
+  await s.crew.onInbound(ME, { hasImage: true, route: ROUTE });
+  await s.say("where's my recap?");
+  assert.match(s.last(), /^No recap yet\./);
 });
 
 // ---------- regressions from the real phone (Nov 14) ----------

@@ -131,7 +131,13 @@ export async function finishDrill(ctx: Ctx, drillId: string, status: CallStatus,
   d.snippet = said.length > 160 ? `${said.slice(0, 157).trim()}…` : said;
   state.mastery[d.topicId] = d.masteryAfter;
   const link = await drillLink(ctx, d);
-  if (link) { await ctx.say(g.feedback, "drill"); await sendLink(ctx, link); } // the answer and the checklist live on the card
+  if (link) { // the answer and the checklist live on the card; the line says what it is and the score, in code
+    const line = `Drill recap: you covered ${g.covered.length} of ${d.keyPoints.length} key points.`;
+    await ctx.say(`${line} ${g.feedback}`, "drill");
+    await sendLink(ctx, link);
+    state.lastRecap = { kind: "drill", url: link, line, at: deps.clock.now().toISOString() };
+    await ctx.commit(); // recorded after both texts went out
+  }
   else await ctx.say(drillRecap(d, nameOf(state, d.topicId), g.feedback), "drill");
   await onMasteryChange(ctx, d.topicId); // still weak: the Planner may propose study time, which still needs a YES
 }

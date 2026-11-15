@@ -59,6 +59,9 @@ const isQuitRequest = (t: string) => {
 };
 
 /** A short text that only makes sense next to a file: "check it", "here's my syllabus". */
+/** "Where's the recap?", "how did I do", "my results": asking for the last drill or round recap. */
+const isRecapRequest = (t: string) => t.length <= 60 && /\b(recap|results?|how did i do|my score|score card|scorecard)\b/i.test(t) && !/\b(exam|midterm|final|grade[sd]?)\b/i.test(t);
+
 /** CALL and its plain-word versions: the only way a voice drill rings (DECISIONS #103). */
 const isCallRequest = (t: string) => /^(please )?(call|call me|call me now|can you call me|give me a call|phone me|drill me|voice drill|ok call|yes,? call|start (the |a )?(voice )?drill)( please)?\W*$/i.test(t.trim());
 
@@ -222,6 +225,7 @@ export class Crew {
       if (/\b(focus|prioriti[sz]e)\b|what should i (study|work on)/i.test(text)) return ctx.say(this.focusSummary(state), "focus");
       if (isStudyRequest(text)) return proposeOnRequest(ctx, text); // the Planner proposes; only YES books it
       if (isDueQuestion(text)) return ctx.say(dueAnswer(state, text, this.deps.clock.now(), this.deps.tz), "focus"); // dates from the syllabus, in code
+      if (isRecapRequest(text)) return this.resendRecap(ctx); // in code: the model once answered this with a made-up "You nailed it!"
       if (isFileCompanion(text)) return this.onCompanion(ctx, text);
       const shot = this.takeScreenshot(id);
       const small = await safeText(this.deps, "smalltalk", "crew-lead", this.chatContext(state, text, !!shot),
@@ -245,6 +249,26 @@ export class Crew {
     return ctx.say(otherwise, "clarify");
   }
 
+  /** Sends the newest recap card again (drill or round), with its line. Older threads: found from the thread itself. */
+  private async resendRecap(ctx: Ctx): Promise<void> {
+    const { state } = ctx;
+    let recap = state.lastRecap;
+    if (!recap) {
+      const out = state.messages.filter((m) => m.dir === "out");
+      for (let i = out.length - 1; i > 0; i--) {
+        const prev = out[i - 1]!;
+        if (out[i]!.kind === "card" && (prev.kind === "drill" || prev.text.startsWith("That's the round"))) {
+          recap = { kind: prev.kind === "drill" ? "drill" : "round", url: out[i]!.text, line: "", at: out[i]!.at };
+          break;
+        }
+      }
+    }
+    if (!recap) return ctx.say('No recap yet. You get one after a quiz round or a voice drill. Say "quiz me" or text CALL.', "clarify");
+    const what = recap.kind === "drill" ? "your last voice drill" : "your last quiz round";
+    await ctx.say(`Here's the recap from ${what}.${recap.line ? ` ${recap.line}` : ""} ${recap.kind === "drill" ? "Tap it for the answer and the points you missed." : "Tap it for the questions you missed and why."}`, recap.kind === "drill" ? "drill" : "tutor");
+    return sendLink(ctx, recap.url);
+  }
+
   /** What the model sees for a free-text reply: the recent thread and the last question, so "I think it's B" makes sense. */
   private chatContext(state: StudentState, text: string, withShot = false): string {
     // Card links and the contact card are shown to the model as what they are, never as URLs it could quote back (#106).
@@ -253,8 +277,11 @@ export class Crew {
     const lastId = state.pendingQuiz?.questionId ?? state.askedQuestionIds.at(-1);
     const q = lastId && state.questions.find((x) => x.id === lastId);
     const quiz = q ? `\n\nThe last quiz question: ${q.prompt} A) ${q.choices.A} B) ${q.choices.B} C) ${q.choices.C}. Correct answer: ${q.correct}) ${q.choices[q.correct]}. Why: ${q.explanation}${state.pendingQuiz ? " (still open: do not reveal the answer)" : " (already answered)"}` : "";
+    // The last voice drill, as it really went, so chat can't invent a result (it once said "You nailed it!" after 0 of 4).
+    const d = [...(state.drills ?? [])].reverse().find((x) => x.status === "done");
+    const drill = d ? `\n\nThe last voice drill call (${d.endedAt?.slice(0, 16) ?? ""}): the student covered ${d.covered?.length ?? 0} of ${d.keyPoints.length} key points. Missed: ${(d.missed ?? []).join("; ") || "nothing"}. Its recap card was already sent in the thread.` : "";
     const shot = withShot ? "\n\nThe student sent the attached screenshot just before this message (often of something you said earlier). Read it." : "";
-    return `Recent messages:\n${recent || "(none)"}${syllabusFacts(state, this.deps.clock.now(), this.deps.tz)}${quiz}${shot}\n\nThe student's new message: ${text}`;
+    return `Recent messages:\n${recent || "(none)"}${syllabusFacts(state, this.deps.clock.now(), this.deps.tz)}${quiz}${drill}${shot}\n\nThe student's new message: ${text}`;
   }
 
   /**

@@ -132,7 +132,7 @@ What we hit on Photon's beta, and how we got around it:
 
 - **Claude on Amazon Bedrock, two models picked per task.** Sonnet 4.6 reads syllabi, writes and checks questions, and grades drills. Haiku 4.5 handles everyday chat ([`bedrock.ts`](apps/agent/src/adapters/bedrock.ts)).
 - **The model writes words; code does the numbers.** Grades, mastery, priority and timing are never invented.
-- **A practical safety story:** YES-gated writes, quiet hours and daily limits, all enforced in code and covered by **246 automated tests**.
+- **A practical safety story:** YES-gated writes, quiet hours and daily limits, all enforced in code and covered by **247 automated tests**.
 - **An Amazon DynamoDB store is built** and switchable (`STORE=dynamo`, [`dynamo-store.ts`](apps/agent/src/adapters/dynamo-store.ts)). The event account's org policy blocks DynamoDB, so the demo keeps state in a local file.
 
 ### Education: personal, interactive, accessible
@@ -178,7 +178,7 @@ Requirements: Node 22+ (tested on 24) and an iPhone with iMessage.
 npm install
 # create .env with the variables in "Setup" below
 
-npm test -w @syllabus-crew/core -w @syllabus-crew/agent   # 246 tests on fakes, no network
+npm test -w @syllabus-crew/core -w @syllabus-crew/agent   # 247 tests on fakes, no network
 npm run demo:loop -w @syllabus-crew/agent                 # the whole loop on fakes, printed as a chat
 
 npm run start -w @syllabus-crew/agent   # the real agent: Photon + Bedrock + Google Calendar (127.0.0.1:8787)

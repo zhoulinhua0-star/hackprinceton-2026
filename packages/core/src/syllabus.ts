@@ -120,6 +120,9 @@ const ASKABLE: AssessmentKind[] = ["exam", "quiz", "paper", "assignment", "proje
 export interface Deadline { name: string; date: string; weight: number }
 export interface Patch { courses: Course[]; exams: Exam[]; topics: Topic[]; deadlines: Deadline[]; missing: Missing[] }
 
+/** Placeholder "topics" a syllabus gives for a cumulative exam. */
+const VAGUE_TOPIC = /^(cumulative|comprehensive|all (of the )?(material|readings|topics|units|chapters|course material)|everything|entire (course|semester)|tbd|tba)\b\W*$/i;
+
 /** Turns a validated parse into our courses / exams / topics, and lists what is still unknown. */
 export function toPatch(p: ParsedSyllabus, tz: string, hour = 10): Patch {
   const courseId = slug(p.courseName);
@@ -150,6 +153,19 @@ export function toPatch(p: ParsedSyllabus, tz: string, hour = 10): Patch {
       return tid;
     });
     exams.push({ id, courseId, name: a.name, weight: (w ?? 0) / 100, date: zoned(y, m, d, hour, 0, tz).toISOString(), topicIds });
+  }
+  // A cumulative exam ("cumulative", "all material") covers every topic before it, not a topic called "cumulative":
+  // drop the placeholder so nothing quizzes on it, and point the exam at the real topics.
+  const vague = new Set(topics.filter((t) => VAGUE_TOPIC.test(t.name.trim())).map((t) => t.id));
+  if (vague.size) {
+    const real = topics.filter((t) => !vague.has(t.id));
+    for (const e of exams) {
+      if (!e.topicIds.some((id) => vague.has(id))) continue;
+      const own = e.topicIds.filter((id) => !vague.has(id));
+      e.topicIds = own.length ? own : real.map((t) => t.id);
+      e.cumulative = true;
+    }
+    topics.splice(0, topics.length, ...real);
   }
   // Only ask about what matters: heaviest first, and nothing under 10% (unknown weights still get asked).
   const wOf = (name: string) => { const a = p.assessments.find((x) => x.name === name); return (a && weightOf(p, a)) ?? 100; };
@@ -183,7 +199,7 @@ export function describe(p: ParsedSyllabus, patch: Patch, tz: string, now: Date 
   const heavy = [...upcomingOnly(patch.exams)].sort((a, b) => b.weight - a.weight)[0];
   if (heavy && (!next || heavy.name !== next.name)) {
     const names = patch.topics.filter((t) => heavy.topicIds.includes(t.id)).map((t) => t.name);
-    const cover = names.length === 1 && /cumulative/i.test(names[0]!) ? " and is cumulative" : names.length ? ` and covers ${names.slice(0, 3).join(", ")}` : "";
+    const cover = heavy.cumulative || (names.length === 1 && /cumulative/i.test(names[0]!)) ? " and is cumulative" : names.length ? ` and covers ${names.slice(0, 3).join(", ")}` : "";
     parts.push(`${heavy.name} is ${pct(heavy.weight)}${cover}.`);
   }
   if (!next && !heavy) parts.push("I couldn't find dated assessments yet.");

@@ -11,3 +11,4 @@ export * from "./naming.ts";
 export * from "./drills.ts";
 export * from "./vcard.ts";
 export * from "./cards.ts";
+export * from "./due.ts";

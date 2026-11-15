@@ -1,3 +1,4 @@
+import { dueAnswer, isDueQuestion, syllabusFacts } from "@syllabus-crew/core";
 import { isAmbiguous, isDontKnow, isHintRequest, isUnsure, parseReply, rankTopics, daysUntil, inQuietHours, parseReminder, formatWhen } from "@syllabus-crew/core";
 import { describe, DEFAULT_AGENT_NAME, PRODUCT_NAME, isNameQuestion, parseNameAnswer, parseRename, parseVibe, parseVibeCommand, voice } from "@syllabus-crew/core";
 import { writeQuestions } from "./questions.ts";
@@ -37,6 +38,18 @@ const semesterKey = (s: StudentState) => `${s.phase}|${s.parsed}|${s.syllabusHas
 /** Most texts one sender may send per hour before the agent stops answering (a flood guard for the public QR code). */
 const MAX_INBOUND_PER_HOUR = 40;
 const SHOT_WAIT_MS = 20_000;
+/** Any way of asking for a quiz: "quiz me", "write me a quiz", "test me", "can I get some practice questions". Not "when is the quiz?". */
+const isQuizRequest = (t: string) => {
+  const s = t.trim();
+  if (/\bquiz me\b|another (one|question)|next question|^(next|more|again|keep going|go on|continue)\W*$|\bwhere('?s| is) (my|the) (quiz|question)|^(a )?quiz\W*$/i.test(s)) return true;
+  if (isDueQuestion(s) || /\b(when|due|date|deadline)\b/i.test(s)) return false; // a question about a quiz on the syllabus
+  return /\b(quiz|test) me\b|\b(quiz|quizzes|practice (questions?|problems?)|practice round|questions? (for|to) me|ask me (a |some )?questions?)\b/i.test(s)
+    && /\b(give|send|start|write|make|create|generate|want|need|get|can|could|let'?s|do|try|run|ask|quiz|test|practice)\b/i.test(s);
+};
+
+/** A short text that only makes sense next to a file: "check it", "here's my syllabus". */
+const isFileCompanion = (t: string) => /^(please )?(check|read|look at|see|open) (it|this|that|this one|the (pdf|file|attachment|syllabus))( out)?( please)?\W*$|^(here( it is|'?s (it|my syllabus|the syllabus|the pdf))|this is my syllabus|my syllabus|syllabus|attached)\W*$/i.test(t.trim());
+
 const DEFAULTS: Opts = { bypassLimits: false, dashboardUrl: "http://localhost:3000", proposalDelayMs: 2000, llmTimeoutMs: 4000, llmProposals: false, sessionLength: 5, nextQuestionDelayMs: 1500, stagedPhoto: true, intakeWaitMs: 6000 };
 
 /** Crew Lead: the one thing the student talks to. Routes to Scout / Tutor / Planner and enforces reply matching in code. */
@@ -124,7 +137,7 @@ export class Crew {
         state.pendingOffer = undefined;
         if (reply.kind === "no") return ctx.say("No problem. I'll check in again another time.", "nudge");
         if (await sendQuiz(ctx, { solicited: true, startSession: NUDGE_ROUND, preferTopic: offer.topicId })) return;
-        return ctx.say("I don't have any new questions right now. Say \"quiz me\" later.", "clarify");
+        return this.noQuestionsYet(ctx, "I don't have any new questions right now. Say \"quiz me\" later.");
       }
 
       // 1b. A question about the syllabus is open: a date or percent answers it.
@@ -172,19 +185,16 @@ export class Crew {
         (state.reminders ??= []).push({ id: `rem_${state.reminders.length + 1}`, text: rem.text, dueISO: rem.due.toISOString(), status: "pending", createdAt: this.deps.clock.now().toISOString() });
         return ctx.say(`Got it. I'll remind you ${formatWhen(rem.due, this.deps.clock.now(), this.deps.tz)} to ${rem.text}.`, "reminder");
       }
-      if (/\bquiz me\b|another (one|question)|next question|^(next|more|again|keep going|go on|continue)\W*$|\bwhere('?s| is) (my|the) (quiz|question)|\b(give|send|start) me (a |the |my )?(quiz|question)|\bi want (a |to )?quiz\b|^(a )?quiz\W*$/i.test(text)) {
+      if (isQuizRequest(text)) {
         const open = state.pendingQuiz && state.questions.find((q) => q.id === state.pendingQuiz!.questionId);
         if (open) return ctx.say(`Still waiting on this one:\n\n${renderQuiz(ctx, open)}`, "quiz");
         if (await sendQuiz(ctx, { solicited: true, startSession: this.deps.opts.sessionLength })) return;
-        if (state.phase === "live" && !state.questions.length) {
-          if (state.questionsStatus === "generating") return ctx.say("I'm still writing your questions. Give me a minute.", "clarify");
-          void this.startQuestions(id, { announce: true }).catch(() => {}); // after this turn; never blocks the reply
-          return ctx.say("I'm writing your first questions now. I'll text you when they're ready.", "clarify");
-        }
-        return ctx.say("I can't send a question right now. Try again a bit later.", "clarify");
+        return this.noQuestionsYet(ctx, "I can't send a question right now. Try again a bit later.");
       }
       if (/\b(focus|prioriti[sz]e)\b|what should i (study|work on)/i.test(text)) return ctx.say(this.focusSummary(state), "focus");
       if (isStudyRequest(text)) return proposeOnRequest(ctx, text); // the Planner proposes; only YES books it
+      if (isDueQuestion(text)) return ctx.say(dueAnswer(state, text, this.deps.clock.now(), this.deps.tz), "focus"); // dates from the syllabus, in code
+      if (isFileCompanion(text)) return this.onCompanion(ctx, text);
       const shot = this.takeScreenshot(id);
       const small = await safeText(this.deps, "smalltalk", "crew-lead", this.chatContext(state, text, !!shot),
         "I'm here. I'll text you quiz questions on what's coming up, and I'll ask before I change your calendar.", () => true,
@@ -196,6 +206,17 @@ export class Crew {
     });
   }
 
+  /** Asked for a quiz with none to send: on a real syllabus, write some (or say they're coming) instead of a dead end. */
+  private async noQuestionsYet(ctx: Ctx, otherwise: string): Promise<void> {
+    const { state } = ctx;
+    if (state.phase === "live" && !state.questions.some((q) => !state.askedQuestionIds.includes(q.id))) {
+      if (state.questionsStatus === "generating") return ctx.say("I'm still writing your questions. Give me a minute and I'll text you.", "clarify");
+      void this.startQuestions(state.id, { announce: true }).catch(() => {}); // after this turn; never blocks the reply
+      return ctx.say("I'm writing your first questions now. I'll text you when they're ready.", "clarify");
+    }
+    return ctx.say(otherwise, "clarify");
+  }
+
   /** What the model sees for a free-text reply: the recent thread and the last question, so "I think it's B" makes sense. */
   private chatContext(state: StudentState, text: string, withShot = false): string {
     // Card links and the contact card are shown to the model as what they are, never as URLs it could quote back (#106).
@@ -205,7 +226,27 @@ export class Crew {
     const q = lastId && state.questions.find((x) => x.id === lastId);
     const quiz = q ? `\n\nThe last quiz question: ${q.prompt} A) ${q.choices.A} B) ${q.choices.B} C) ${q.choices.C}. Correct answer: ${q.correct}) ${q.choices[q.correct]}. Why: ${q.explanation}${state.pendingQuiz ? " (still open: do not reveal the answer)" : " (already answered)"}` : "";
     const shot = withShot ? "\n\nThe student sent the attached screenshot just before this message (often of something you said earlier). Read it." : "";
-    return `Recent messages:\n${recent || "(none)"}${quiz}${shot}\n\nThe student's new message: ${text}`;
+    return `Recent messages:\n${recent || "(none)"}${syllabusFacts(state, this.deps.clock.now(), this.deps.tz)}${quiz}${shot}\n\nThe student's new message: ${text}`;
+  }
+
+  /**
+   * "Check it" belongs to a file. iMessage often delivers the text before the file, so it isn't answered on its own:
+   * if a file just came in, it's already being handled; otherwise wait a moment for the file before asking for it.
+   */
+  private async onCompanion(ctx: Ctx, text: string): Promise<void> {
+    const { state } = ctx, id = state.id;
+    const ins = state.messages.filter((m) => m.dir === "in");
+    const now = this.deps.clock.now().getTime();
+    if (ins.slice(-4, -1).some((m) => m.text === "[photo]" && now - new Date(m.at).getTime() < 60_000)) return; // the file came first
+    const wait = this.deps.opts.companionWaitMs ?? 6000;
+    const t = setTimeout(() => void this.run(id, async () => {
+      const c = await this.open(id, false);
+      if (!c) return;
+      const at = c.state.messages.findLastIndex((m) => m.dir === "in" && m.text === text);
+      if (at < 0 || c.state.messages.slice(at + 1).some((m) => m.dir === "in")) return; // a file (or anything else) followed
+      await c.say("Send it over and I'll take a look. A syllabus works best as a PDF.", "clarify");
+    }).catch(() => {}), wait);
+    t.unref?.();
   }
 
   // ---------- naming ----------
@@ -417,7 +458,7 @@ export class Crew {
     const top = rankTopics(state, now, this.deps.tz)[0];
     if (!top) return "Send me your syllabus as a PDF and I'll tell you what to focus on.";
     const topic = state.topics.find((t) => t.id === top.topicId)!;
-    const exam = state.exams.find((e) => e.topicIds.includes(top.topicId))!;
+    const exam = state.exams.find((e) => e.id === top.examId) ?? state.exams.find((e) => e.topicIds.includes(top.topicId))!;
     const pct = Math.round((state.mastery[top.topicId] ?? 0.5) * 100);
     return `Focus on ${topic.name}: you're at ${pct}%, and ${exam.name} is ${Math.round(exam.weight * 100)}% of your grade in ${daysUntil(exam.date, now, this.deps.tz)} days.`;
   }

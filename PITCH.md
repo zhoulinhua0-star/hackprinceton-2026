@@ -7,32 +7,52 @@ The stage beats are in `DEMO-SCRIPT.md`. This file covers what to *say*, the dec
 
 ---
 
-## 1. The line (say it twice: in the hook and in the close)
+## 1. The story: the ten-minute walk
 
-> **"Study apps wait for you to open them. Syl texts you."**
+One feature, told as one moment every student knows. Everything else Syl does gets one sentence at the end.
 
-Close: **"Your quiz answers just rewrote your calendar. Nobody opened an app."**
+> It's 12:50. You just walked out of lecture, and your next class is ten minutes away across campus. Your midterm is Monday and it's 25% of your grade.
+> The old way: find a seat in a café, open the syllabus PDF, work out what's on the exam, quiz yourself, open your calendar, find an hour. Fifteen minutes you don't have.
+> With Syl, you do it on the walk, with your thumb.
 
-One sentence if someone asks what it is: *a study agent in iMessage that reads your syllabus, quizzes you on what's worth the most, and asks before it puts study time on your calendar.*
+**The line (hook and close):** "Study apps wait for you to open them. Syl texts you."
+
+**One sentence if asked what it is:** *a study agent in iMessage that reads your syllabus, checks whether you're ready, and asks before it puts review time on your calendar.*
+
+**Why this framing works:**
+- It's concrete: a real ten-minute gap, a real exam, a real calendar.
+- It shows the whole loop in under a minute: a question, one tap, graded in code, a proposal, YES, a calendar event.
+- It lands all three Education words without saying them: **personal** (your syllabus, your weak spot), **interactive** (it asks you back), **accessible** (a text and a tap while walking).
 
 ---
 
 ## 2. Stage pitch (2 minutes, your phone mirrored)
 
-| Time | Say | Show (DEMO-SCRIPT beat) |
-|---|---|---|
-| 0:00 | "Who here has a syllabus they opened exactly once?" Then the line. | Empty thread (0) |
-| 0:15 | "The syllabus says what matters and how much it's worth. Nothing acts on it." | |
-| 0:25 | "I text it my syllabus PDF. That's the whole setup." | PDF → summary + semester card (1) |
-| 0:45 | "Fast-forward to week six." | Switch to Week 6 (2) |
-| 0:50 | "New slides dropped, so **it texts me first** with a question." | Scout → quiz (3) |
-| 1:00 | "I answer wrong. It asks me a question back instead of telling me." | B → hint (4) |
-| 1:15 | "Weak topic, big exam: it proposes study time. It can't touch my calendar." | Proposal + week card (5) |
-| 1:25 | "Only my YES writes it." | YES → Google Calendar event (6) |
-| 1:40 | Trust: "It only texts people who texted it, does the math in code, and never touches your calendar without a YES." | Tap the week card |
-| 1:50 | The close. Then: **"Want it on your phone? Give me your number."** | |
+Before you walk up, your real syllabus is already loaded and its questions are written (see `DEMO-SCRIPT.md`, Setup). `[topic]` and `[exam]` are whatever your syllabus produces; read them off the phone.
 
-**Don't say:** that it reads slides from a real inbox (Scout reads a staged inbox in the demo), or that it runs in the cloud (it runs on the laptop).
+| Time | Say | Show |
+|---|---|---|
+| 0:00 | "It's 12:50. You just walked out of lecture, next class in ten minutes, midterm on Monday, 25% of your grade." | Phone, thread open |
+| 0:12 | "The old way is a café seat, the syllabus PDF and your calendar app. Fifteen minutes you don't have." | |
+| 0:20 | "I sent Syl my syllabus once, at the start of the term. That's the only setup." | Scroll up: the syllabus summary and its link |
+| 0:28 | "So on the walk, I just ask." Type **what should I focus on this week?** | "Focus on [topic]: you're at 50%, and [exam] is 25% of your grade in N days." |
+| 0:40 | "That answer is code: the grade weight, my mastery and the days left. Not the model guessing." | |
+| 0:45 | "And when it's worth it, Syl texts first." (press **Send quiz now** on the laptop) | Phone buzzes: one A/B/C question |
+| 0:55 | "One question, one tap. I'll get it wrong." Tap a wrong letter | A question back instead of the answer |
+| 1:05 | "It doesn't just tell me. It asks me back, like a good TA." | |
+| 1:10 | "Weak topic, big exam, so it offers a slot that's actually free." | "[exam] is 25% and [topic] is your weak spot. Want me to add 30 minutes of review on [day]? Reply YES or NO." + the week link |
+| 1:20 | "It can't touch my calendar on its own. Only my YES does." Reply **YES** | "Done. [day, time]…" + the Booked link; Google Calendar shows the event |
+| 1:32 | "And it picks the question back up." Answer correctly | "Back to the question…", then it confirms and explains |
+| 1:40 | "Ten minutes of walking. I checked I'm ready, fixed a weak spot, and it's on my calendar. No café, no PDF, no calendar app." | |
+| 1:48 | "That's one slice. Syl also reads new slides, runs practice rounds with a recap page, sends reminders, and knows when to stay quiet. And if you'd rather talk it through, reply CALL and it phones you." Then the line. | |
+
+**If asked who sent the question:** "In real use the Nudger decides when, inside rules: 9 AM to 8 PM, at most 3 a day, never mid-conversation. On stage I trigger it so you don't wait."
+
+**Don't say:**
+- that it books on its own (it proposes; YES books it);
+- "A, B, C or D" (questions have three choices);
+- that it knows each class's reading (it knows the graded items, dates, weights and topics);
+- that it runs in the cloud (it runs on the laptop).
 
 ---
 
@@ -67,7 +87,7 @@ After the event: release every seat except yours.
 
 1. **Title.** Syllabus Crew, with the line under it.
 2. **The problem.** The syllabus has the stakes (weights, dates) and no one acts on it. One interview quote **[YOU]** plus a number, e.g. "N of M students said…" **[YOU]**.
-3. **Live demo.** Just the phone.
+3. **Live demo: the ten-minute walk.** Just the phone.
 4. **How it works.**
    - One iMessage thread.
    - Crew Lead routes every text. Four specialists (Scout, Tutor, Planner, Nudger) work behind it.
@@ -94,12 +114,11 @@ After the event: release every seat except yours.
   - The model is used for language only. Grading, mastery, priority and timing are code.
   - DynamoDB store built (`STORE=dynamo`), blocked by the event account's org policy.
   - A practical safety story: YES-gated writes, quiet hours, daily limits.
-- **Education:**
-  - Socratic hint before the answer, then the reveal after two misses.
-  - Mastery per topic: wrong ×0.7, right +30% of the gap.
-  - Practice rounds with a recap card.
-  - Voice drills: "explain it out loud", graded against key points.
-  - Study time weighted by grade stakes.
+- **Education** (the track asks for personal, interactive, accessible):
+  - **Personal:** built from your syllabus; the priority score (grade weight × weakness × days left) picks what you study.
+  - **Interactive:** a question back before the answer; the reveal after two misses; reply CALL and explain it out loud on a 3-minute call.
+  - **Accessible:** no app or sign-up, just Messages on your iPhone; tap or talk; every recap comes back in writing, with a link.
+  - Mastery in code: a miss keeps 70%, a right answer gains 30% of the gap.
 - **Photon:**
   - Slide 5 in more depth.
   - Inbound via the Socket.IO stream plus a poll, deduplicated.
@@ -129,7 +148,8 @@ After the event: release every seat except yours.
 - [ ] Agent and dashboard running. The agent log says `voice drills on; cards on`, and the calendar is `google`.
 - [ ] Google token fresh (it expires about 7 days after connecting).
 - [ ] `/demo` → Reset. The thread is clear and the calendar has no leftover events.
-- [ ] Rehearse DEMO-SCRIPT beat 1 with the PDF (the earlier runs used the photo).
+- [ ] Real syllabus loaded, questions written, and the next exam at least 2 days out (see DEMO-SCRIPT Setup).
+- [ ] One full rehearsal of the ten-minute walk on the real syllabus.
 - [ ] A friend's phone tested once with `npm run seat`. **[YOU]**
 - [ ] Old seats released; `npm run seat -- list` shows only who should be there.
 - [ ] `seed/macro-syllabus.pdf` saved in Files on your phone, ready to AirDrop.

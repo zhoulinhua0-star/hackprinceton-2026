@@ -5,7 +5,7 @@ export type Phase = "day1" | "week6" | "live";
 export type Choice = "A" | "B" | "C";
 
 export interface Course { id: string; name: string }
-export interface Exam { id: string; courseId: string; name: string; weight: number; date: string; topicIds: string[] }
+export interface Exam { id: string; courseId: string; name: string; weight: number; date: string; topicIds: string[]; /** Covers everything before it (the syllabus said "cumulative"). */ cumulative?: boolean }
 export interface Topic { id: string; courseId: string; name: string; short: string }
 
 export interface Question {

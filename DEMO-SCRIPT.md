@@ -1,32 +1,35 @@
 # Demo script: Syllabus Crew (2 minutes, stage)
 
-Setup before you walk up: agent and dashboard running, `/demo` open on the laptop (no key needed), iPhone mirrored via QuickTime, thread open to the line (+1 628 502 3837), Google Calendar open on the exam week, Wi-Fi tested.
-Fallback if anything stalls: play the backup video, say "same flow, recorded earlier".
+The story is the ten-minute walk (`PITCH.md` §1–2): one question on the way to class, one tap, a proposal, YES, a calendar event.
+Setup before you walk up: agent and dashboard running, `/demo` open on the laptop, iPhone mirrored via QuickTime, thread open to the line (+1 628 502 3837), Google Calendar open on the coming week, Wi-Fi tested.
 
-## Reset (before every run)
-1. `/demo` -> **Reset demo**. Wait for the confirmation. The dashboard thread clears and Google Calendar loses any events from the last run.
+## Setup (before every run, about 3 minutes)
+1. `/demo` → **Reset demo**. This clears the course, so the syllabus goes in again (next step). It also removes calendar events from the last run.
+2. Text the real syllabus PDF from your phone. Answer any question Syl asks (a missing date, the term start).
+3. `/demo` → **Write quiz questions**. Wait about a minute, until the agent log or dashboard shows them ready.
+4. Check on the dashboard that the next exam is **at least 2 days away**. The Planner needs a free slot before it, or it won't propose.
+5. Don't answer anything else in the thread. Every topic should still be at 50%, so one miss drops it to 35% and brings the proposal.
 
-## Optional opening (not rehearsed yet): the agent texts first
-After Reset, press **Say hello** on `/demo`. The agent introduces itself and asks for a name, then a vibe (CHILL / STRICT / HYPE), then which class worries you most. Then send the PDF as in beat 1. Skip this and start at beat 1 if time is short.
+Why a reset every run: the Planner proposes once per topic, and a NO blocks that topic for a day.
 
 ## Beats (what you do -> what the room sees -> what you say)
 
-| # | You do | Phone / screen shows | Say (one line) |
+| # | You do | Phone shows | Say (one line) |
 |---|---|---|---|
-| 0 | Open on the phone thread | Empty thread | "Every student has a syllabus they never reread. This is an agent that lives in iMessage." |
-| 1 | Attach `seed/macro-syllabus.pdf` in Messages and send it (AirDrop it to the phone first; save it in Files) | "Got it, reading your syllabus…", then about 10 s later the real summary: ECON 201, final exam 30%, heavy week | "I just sent the PDF of my syllabus. That's the whole setup. It read it: weights, dates, the heavy week." |
-| 2 | Wait for the summary text, then `/demo` -> **Switch to Week 6** | Dashboard flips to Week 6, exam card appears | "Fast-forward to week six." |
-| 3 | `/demo` -> **Run Scout now** | Phone buzzes: "Prof. Lee posted Week 6 slides" plus a chapter 5 A/B/C question (correct answer A, demo answer B) | "A new slide deck dropped, so it quizzes me before the exam." |
-| 4 | Reply **B** (the wrong answer) | Socratic hint, not the answer; mastery bar drops on the dashboard | "Wrong answer. It asks a question back instead of telling me. Grading and mastery math are code, not the model." |
-| 5 | Read the proposal text | Study block proposal with times, "reply YES" | "Weak topic plus a heavy exam, so it proposes study time. It cannot touch my calendar on its own." |
-| 6 | Reply **YES** | Confirmation text; Google Calendar event appears | "Only my YES writes to the calendar. There it is." |
-|   | (after YES) | "Done." + the booked card, then "Back to the question:" with the open quiz (#108) | "And it picks the conversation back up. It never leaves you hanging." |
-| 7 | Show dashboard (exam card, mastery, timeline) | Mastery bars, proposal approved | "Same state, mirrored for a human." |
+| 0 | Hold the phone, thread open | The syllabus summary from setup | "It's 12:50, next class in ten minutes, midterm Monday." |
+| 1 | Scroll up a little | Syllabus summary + semester link | "I sent it my syllabus once. That's the only setup." |
+| 2 | Type **what should I focus on this week?** | "Focus on [topic]: you're at 50%, and [exam] is N% of your grade in N days." | "That's code: weight, mastery, days left." |
+| 3 | Laptop: `/demo` → **Send quiz now** | Phone buzzes: one A/B/C question | "When it's worth it, Syl texts first." |
+| 4 | Tap a **wrong** letter | A question back, not the answer | "It asks me back instead of telling me." |
+| 5 | Wait about 2 s | "[exam] is N% and [topic] is your weak spot. Want me to add 30 minutes of review on [day]? Reply YES or NO." + week link | "Weak topic, big exam: it offers a free slot." |
+| 6 | Reply **YES** | "Done. [day, time]…" + Booked link; the event appears in Google Calendar | "Only my YES writes it. There it is." |
+| 7 | Answer the question correctly | "Back to the question…", then it confirms and explains | "And it picks the question back up." |
+| 8 | Close | | "Ten minutes of walking: ready-check, weak spot fixed, on my calendar. That's one slice." |
 
-Close (10 sec): "Photon for the iMessage line, Claude on Amazon Bedrock, Google Calendar on approval. It reads real syllabi, follows rule-bound nudges, and never texts a student who hasn't texted first."
+Close (10 sec): the one-slice line from `PITCH.md` (slides, rounds with a recap page, reminders, quiet hours, CALL), then "Study apps wait for you to open them. Syl texts you."
 
 ## Rehearsal log (3 clean runs in a row, no fixes between)
-Runs 1-3 used the photo (saved copy). Beat 1 is now the real PDF read: rehearse it again.
+Runs 1-3 were the older Week 6 flow on the demo course. The ten-minute walk on the real syllabus still needs its own runs.
 | Run | Date/time | Clean? | Notes |
 |---|---|---|---|
 | 1 | Nov 14, ~1:40 AM ET | Yes | All beats worked on the real iPhone and Google Calendar. |
@@ -34,11 +37,11 @@ Runs 1-3 used the photo (saved copy). Beat 1 is now the real PDF read: rehearse 
 | 3 | Nov 14, ~2:00 AM ET | Yes | Three clean runs in a row, no fixes between. |
 
 ## If something goes wrong
-- The PDF read takes longer than 20 s (busy AI service): keep talking over it; if nothing after 45 s, text the photo `seed/macro-syllabus.jpg` instead, which loads the same course instantly from a saved copy (say so if asked).
+- No proposal after the miss: the topic was already below 50%, or there's no free slot before the exam. Say "it only offers when there's a free slot," then book one by text: "book me 30 minutes for [topic] on [day] at 4" (the Planner still asks for YES).
+- No question after **Send quiz now**: the questions aren't written yet (setup step 3), or one is already open. Text "quiz me" from the phone instead.
 - No reply in 10 s: say "Wi-Fi, one second", check the agent log, resend once. Don't resend twice.
-- Odd model wording: keep going. The rules (YES-only writes, grading in code) are the point.
 - Calendar event missing: the dashboard Approve button takes the same write path; show the dashboard calendar panel.
-- Total failure: backup video.
+- Odd model wording in the hint: keep going. The rules (YES-only writes, grading in code) are the point.
 
 ## Honest limits to say if asked
-Questions come from model knowledge of the reading, not the reading's text. Scout reads a staged inbox in the demo. The agent runs on the laptop; DynamoDB, EventBridge and Textract are the production plan.
+Questions come from model knowledge of the topic, not the reading's own text. Syl knows the graded items, dates, weights and topics from the syllabus, not each class's reading. On stage you trigger the first question; in real use the Nudger decides when, inside its rules. The agent runs on the laptop; DynamoDB, EventBridge and Textract are the production plan.

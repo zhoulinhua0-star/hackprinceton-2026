@@ -76,3 +76,18 @@ test("isDontKnow and isHintRequest", () => {
   for (const t of ["hint", "Hint?", "give me a hint", "can I get a hint", "clue"]) assert.equal(isHintRequest(t), true, t);
   for (const t of ["hints are bad", "a", "what hint"]) assert.equal(isHintRequest(t), false, t);
 });
+
+test("a cumulative final covers the real topics, never a topic called \"cumulative\"", () => {
+  const p: ParsedSyllabus = {
+    courseName: "ACA 101", instructor: null, term: null, termStartDate: "2026-09-02", notes: null,
+    categories: [{ name: "Writing", weightPercent: 30 }, { name: "Final", weightPercent: 30 }],
+    assessments: [
+      { name: "Essay #3", kind: "paper", category: "Writing", date: "2026-12-07", week: null, topics: ["The Book of Songs", "Homer, The Odyssey"] },
+      { name: "Final Exam", kind: "exam", category: "Final", date: "2026-12-16", week: null, topics: ["cumulative"] },
+    ],
+  };
+  const patch = toPatch(p, TZ);
+  assert.deepEqual(patch.topics.map((t) => t.name), ["The Book of Songs", "Homer, The Odyssey"]);
+  const final = patch.exams.find((e) => e.name === "Final Exam")!;
+  assert.deepEqual(final.topicIds, patch.topics.map((t) => t.id));
+});

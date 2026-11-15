@@ -40,9 +40,9 @@ window.THREADS = {
   ],
   chat: [
     ["me", "what should I focus on this week?"],
-    ["lead", "Chapter 5. Exam 2 is Friday and it's 25% of your grade, and rates are your weakest topic so far (35%). Want a quick question on it now?"],
-    ["me", "yes"],
-    ["tutor", "Ch. 5 before Exam 2\nA rate hike makes borrowing…\nA) cheaper  B) more expensive  C) unchanged"],
+    ["lead", "Focus on Ch. 5: Rates: you're at 35%, and Exam 2 is 25% of your grade in 3 days."],
+    ["me", "quiz me"],
+    ["tutor", "Question 1 of 5 · Ch. 5 before Exam 2\nA rate hike makes borrowing…\nA) cheaper  B) more expensive  C) unchanged"],
   ],
   screenshot: [
     ["me", "file:IMG_2041.png"],
@@ -72,6 +72,9 @@ window.THREADS = {
     ["tutor", "Not quite. If the price of a loan is the interest rate, what happens to that price when rates go up?"],
     ["me", "B"],
     ["tutor", "Correct! Higher rates make every loan cost more."],
+    ["note", "Questions 2 to 5"],
+    ["tutor", "That's the round: 4 of 5 on the first try."],
+    ["tutor", "card:round"],
   ],
   round: [
     ["tutor", "Question 5 of 5 · Ch. 6 before Exam 2\nA tariff on imports usually makes the domestic price…\nA) fall  B) rise  C) stay the same"],
@@ -90,7 +93,7 @@ window.THREADS = {
     ["me", "CALL"],
     ["tutor", "Calling you now from (609) 555-0142: a 3-minute drill on Ch. 5: Rates."],
     ["tutor", "call:3 min · Syl voice drill"],
-    ["tutor", "Nice work. You nailed why borrowing costs more. The missing piece: fewer projects pay off, so investment falls."],
+    ["tutor", "You had the borrowing cost and the dropped projects. The missing piece: investment spending falls."],
     ["tutor", "card:drill"],
   ],
   propose: [
@@ -148,7 +151,7 @@ window.STOPS = [
     wont: ["Send email", "Delete or edit anything", "Post on your behalf"] },
   { id: "quad", n: 3, who: "tutor", place: "The quad", title: "Tutor asks before it tells.",
     blurb: "Questions are written from your syllabus and double-checked before you see them. Miss once and you get a question back, not the answer. Grading is code.",
-    features: [["quiz", "Quiz me", "One question, a hint after a miss."], ["round", "A round of five", "Then a recap card with your score."], ["idk", "I don't know", "It explains instead of making you guess."], ["call", "Reply CALL", "Your phone rings: explain it out loud, get a recap by text."]],
+    features: [["call", "Reply CALL", "Your phone rings. Explain it out loud; it listens, follows up once, and texts what you missed.", "Voice drill"], ["quiz", "Quiz me", "One question, a hint after a miss."], ["round", "A round of five", "Then a recap card with your score."], ["idk", "I don't know", "It explains instead of making you guess."]],
     wont: ["Reveal the answer on the first miss", "Call you unless you reply CALL", "Let the model do the math on your score"] },
   { id: "library", n: 4, who: "planner", place: "The library", title: "Planner proposes. You decide.",
     blurb: "A weak topic on a heavy exam gets a specific slot, in one text. Only your YES writes to Google Calendar.",
@@ -205,11 +208,12 @@ window.TRACKS = {
     "A practical safety story: YES-gated writes, quiet hours, daily limits, all enforced in code and tested (234 tests).",
     "An Amazon DynamoDB store is built and switchable; the event account's policy blocked it, so state stays in a file for the demo.",
   ],
+  // [lead-in, text]: the track asks for personal, interactive and accessible, so the tab leads with those words.
   "Education": [
-    "A Socratic hint before the answer, then the reveal after two misses.",
-    "Mastery per topic: right gains 30% of the gap, wrong keeps 70%.",
-    "Practice rounds with a recap card, and voice drills where you explain it out loud and get graded on key points.",
-    "Study time weighted by what's actually at stake on the syllabus.",
+    ["Personal", "built from your syllabus and your mastery per topic; study time goes where the grade weight and your weak spots are."],
+    ["Interactive", "reply CALL and explain it out loud on a 3-minute call; it follows up once, then makes sure you know the answer. Text quizzes give a hint before the answer."],
+    ["Accessible", "no app or sign-up, just Messages on your iPhone and an ordinary phone call; tap or talk; the recap comes back in writing."],
+    ["", "Grading and mastery are code: right gains 30% of the gap, a spoken explanation moves it 45% toward your score."],
   ],
 };
 
@@ -276,4 +280,49 @@ window.NEXT = [
   ["Questions from the reading itself", "Built from your slides' text, not the model's general knowledge."],
   ["Group study threads", "One Syl for a study group, with a shared plan."],
   ["Every course at once", "Five syllabi, one week planned across all of them."],
+];
+
+// Personal / Interactive / Accessible: what the Education track asks for, each with proof from the product.
+window.PIA = [
+  { word: "Personal", kicker: "Built around you", c: "lead", src: "priority.ts · voice.ts pickTopic · naming.ts", items: [
+    "Made from <b>your</b> syllabus: your exams, their weights, your topics.",
+    "It tracks mastery per topic and works on your weakest one before your next exam. The call drills that same topic.",
+    "You name it and pick its vibe. The call opens with that name: \u201cHey, it's Max.\u201d"] },
+  { word: "Interactive", kicker: "It talks back", c: "tutor", call: true, src: "voice-drill.md · tutor.ts · approve.ts", items: [
+    "<b>Reply CALL and your phone rings.</b> You explain the idea out loud; it asks one follow-up, then explains and has you say it back.",
+    "Text quizzes give a hint after a miss, not the answer.",
+    "Every study block waits for your YES, and you can move it by text first."] },
+  { word: "Accessible", kicker: "Nothing to learn", c: "planner", src: "photon.ts · drills.ts drillRecap", items: [
+    "No app to install or account to make: it's a thread in Messages, the app already on your iPhone, and a phone call when you ask for one.",
+    "Two ways to practice: tap A, B or C, or talk it through on the phone.",
+    "What's said on the call comes back in writing: the recap text and its link spell out anything you missed."] },
+];
+
+// The voice drill, replayed. Wording follows agents/voice-drill.md and apps/agent/src/engine/voice.ts; numbers from packages/core/src/drills.ts.
+window.CALL = {
+  name: "Max", topic: "Ch. 5: Rates", before: 0.35,
+  thread: [
+    ["them", "Exam 2 is in 3 days and Ch. 5: Rates is at 35%. Want a 3-minute voice drill? Reply CALL."],
+    ["me", "CALL"],
+    ["them", "Calling you now from (609) 555-0142: a 3-minute drill on Ch. 5: Rates."],
+  ],
+  talk: [
+    ["agent", "Hey, it's Max. Quick three-minute drill on Ch. 5: Rates. In your own words, why does a rate hike cut investment?"],
+    ["stu", "Borrowing gets more expensive for companies."],
+    ["agent", "Right. So what happens to a project that was only barely worth it before?"],
+    ["stu", "It's not worth it anymore, so they drop it."],
+    ["agent", "Exactly. Nice work. I'll text you a recap."],
+  ],
+  feedback: "You had the borrowing cost and the dropped projects. The missing piece: investment spending falls.",
+  points: ["higher rates raise the cost of borrowing", "firms drop projects whose return is below the new rate", "investment spending falls"],
+  says: ["Let's go over it again next time.", "Good start: you had the borrowing cost.", "You had the borrowing cost and the dropped projects.", "You covered every key point."],
+  rules: ["Rings only after you reply CALL", "9 AM to 8 PM", "One a day", "One hint, then it tells you", "The score is code, not the model"],
+};
+
+// Every time Syl texts a link (apps/agent/src/engine/cards.ts and its callers). Order matches the card grid.
+window.LINKS = [
+  { when: "Right after it reads your syllabus", line: "Got it. ECON 201. Next up: Exam 2 on Nov 20 (25%)…", after: "Same link, kept current: answer its question or let Scout spot a change and the page updates." },
+  { when: "With every study block it proposes", line: "Want me to add 30 minutes of review on Tuesday? Reply YES or NO.", after: "Also when you ask for one. Same page: after YES or a move it's sent again, so the preview says Booked." },
+  { when: "When a quiz round ends", line: "That's the round: 4 of 5 on the first try.", after: "A new link for every round: 5 questions when you ask, 3 after a nudge." },
+  { when: "When a voice-drill call ends", line: "You had the borrowing cost and the dropped projects.", after: "A new link for every call." },
 ];

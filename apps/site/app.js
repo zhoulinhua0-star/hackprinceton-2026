@@ -65,7 +65,7 @@
       if (text.startsWith("call:")) return h("div", { class: "callpill", html: `${ICON.call}<span></span>` }, text.slice(5));
       if (text.startsWith("card:")) {
         const [title, sub, art] = CARD_PREVIEW[text.slice(5)];
-        const el = h("div", { class: "att", html: `<div class="att-art">${miniArt[art]}</div><div class="cap"><b></b><small></small></div>` });
+        const el = h("div", { class: "att", html: `<div class="att-art">${miniArt[art]}</div><div class="cap"><b></b><small></small><span class="url">syllabus-crew-cards.vercel.app</span></div>` });
         $("b", el).textContent = title; $("small", el).textContent = sub;
         return el;
       }
@@ -97,7 +97,9 @@
   // ---------- hero: pins on the campus ----------
   const hero = makePhone($('[data-phone="hero"]'));
   const pins = $$(".pin");
+  let toured = false;
   pins.forEach((p) => p.addEventListener("click", () => {
+    toured = true;
     pins.forEach((x) => x.setAttribute("aria-pressed", x === p));
     if (window.matchMedia("(max-width: 980px)").matches) $(".hero-phone").scrollIntoView({ behavior: still ? "auto" : "smooth", block: "center" });
     hero.play(p.dataset.play);
@@ -107,7 +109,15 @@
   const syncChips = () => $$("button", chips).forEach((c, i) => c.setAttribute("aria-pressed", pins[i].getAttribute("aria-pressed")));
   pins.forEach((p) => p.addEventListener("click", syncChips));
   pins[0].setAttribute("aria-pressed", "true"); syncChips();
-  setTimeout(() => hero.play("hello"), still ? 0 : 900);
+  // Until someone taps a pin, the phone walks the campus by itself: [pin, thread]. The quad plays the quiz, then the call.
+  const TOUR = [[0, "hello"], [2, "quiz"], [2, "call"], [3, "propose"], [1, "scout"], [4, "night"]];
+  const tour = (i) => {
+    if (toured) return;
+    const [pin, name] = TOUR[i % TOUR.length];
+    pins.forEach((x, j) => x.setAttribute("aria-pressed", j === pin)); syncChips();
+    hero.play(name, () => { if (!still) setTimeout(() => tour(i + 1), 3200); });
+  };
+  setTimeout(() => tour(0), still ? 0 : 900);
 
   // ---------- the crew: the routing line (Syl hands each text to one of four) ----------
   const SUBS = ["scout", "tutor", "planner", "nudger"];
@@ -162,8 +172,8 @@
     $$(".apk", pick).forEach((b, j) => b.setAttribute("aria-selected", j === agentIdx));
     $$("i", dots).forEach((d, j) => d.classList.toggle("on", j === agentIdx));
     if (SUBS.includes(k)) { clearInterval(laneTimer); lightLane(k); } else if (user) { clearInterval(laneTimer); litLane = null; lanes.forEach((l) => l.classList.remove("on")); paintWires(null); }
-    const items = s.features.map(([play, label, sub]) => {
-      const b = h("button", { class: "fitem", style: `--c:${c}`, "aria-pressed": "false", html: `<span class="play"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg></span><span>${label}<small>${sub}</small></span>` });
+    const items = s.features.map(([play, label, sub, tag]) => {
+      const b = h("button", { class: `fitem${tag ? " lead-feat" : ""}`, style: `--c:${c}`, "aria-pressed": "false", html: `<span class="play"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg></span><span>${label}${tag ? `<span class="ftag">${tag}</span>` : ""}<small>${sub}</small></span>` });
       b.addEventListener("click", () => { $$(".fitem", panelEl).forEach((x) => x.setAttribute("aria-pressed", x === b)); crewPhone.play(play); });
       return b;
     });
@@ -263,6 +273,58 @@
   $("#ans-wrong").addEventListener("click", () => answer(false));
   sim();
 
+  // ---------- personal, interactive, accessible ----------
+  $("#pia").append(...PIA.map((p) => h("article", { class: `pia-card${p.call ? " is-call" : ""}`, style: `--c:var(--${p.c})` },
+    h("h3", { html: `<span>${p.kicker}</span>${p.word}` }),
+    h("ul", {}, p.items.map((t) => h("li", { html: t }))),
+    p.call ? h("a", { class: "btn small jump", href: "#call" }, "Hear how the call goes ↓") : null,
+    h("p", { class: "src" }, p.src))));
+
+  // ---------- the call: replay, then the mastery math (ported from packages/core/src/drills.ts) ----------
+  const tmsgs = $("#tmsgs"), live = $("#live"), timer = $("#timer"), cphone = $("#cphone"), playBtn = $("#play-call");
+  let callRun = 0, callTick;
+  const cwait = (ms, r) => new Promise((ok, no) => setTimeout(() => (r === callRun ? ok() : no()), still ? 0 : ms));
+  const cbubble = (who, t) => {
+    if (t === "card:drill") { const el = h("div", { class: "att", html: `<div class="att-art">${miniArt.ring}</div><div class="cap"><b>Voice drill · Ch. 5: Rates</b><small>2 of 3 key points</small><span class="url">syllabus-crew-cards.vercel.app</span></div>` }); tmsgs.append(el); return; }
+    tmsgs.append(h("div", { class: `bb ${who}` }, t));
+  };
+  const screen = (id) => { $("#s-thread").hidden = id !== "s-thread"; $("#s-call").hidden = id !== "s-call"; };
+  const callReset = () => { clearInterval(callTick); tmsgs.innerHTML = ""; live.innerHTML = ""; timer.textContent = "calling…"; cphone.classList.remove("ringing"); screen("s-thread"); };
+  async function playCall() {
+    const r = ++callRun; callReset(); playBtn.textContent = "Replay";
+    try {
+      for (const [w, t] of CALL.thread) { await cwait(w === "me" ? 900 : 700, r); cbubble(w, t); }
+      await cwait(1300, r); screen("s-call"); cphone.classList.add("ringing");
+      await cwait(1800, r); cphone.classList.remove("ringing");
+      let sec = 0; timer.textContent = "0:00";
+      if (!still) callTick = setInterval(() => { sec += 9; timer.textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`; }, 300);
+      for (const [w, t] of CALL.talk) {
+        await cwait(w === "stu" ? 1300 : 900, r);
+        live.append(h("div", { class: `line ${w}` }, h("i", {}, w === "agent" ? CALL.name : "You"), t));
+        while (live.children.length > 4) live.firstChild.remove();
+      }
+      await cwait(1500, r); clearInterval(callTick); timer.textContent = "2:41 · ended";
+      await cwait(1000, r); screen("s-thread");
+      await cwait(500, r); cbubble("them", CALL.feedback);
+      await cwait(700, r); cbubble("them", "card:drill");
+    } catch { /* a newer run took over */ }
+  }
+  playBtn.addEventListener("click", playCall);
+  CALL.thread.forEach(([w, t]) => cbubble(w, t)); // a still frame until Play
+  $("#call-rules").append(...CALL.rules.map((t) => h("span", {}, t)));
+
+  const drillMastery = (m, score) => { const v = Math.max(0, Math.min(1, score)); return Math.round((m + (v >= m ? 0.45 : 0.3) * (v - m)) * 1000) / 1000; };
+  const seg = $("#seg"), pct = (v) => `${Math.round(v * 100)}%`;
+  [0, 1, 2, 3].forEach((k) => seg.append(h("button", { "aria-pressed": "false", "data-k": k }, `${k} of 3`)));
+  function setPoints(k) {
+    $$("button", seg).forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.k === k)));
+    const after = drillMastery(CALL.before, k / 3), missed = CALL.points.slice(k);
+    $("#m-was").style.width = pct(CALL.before); $("#m-now").style.width = pct(after); $("#m-after").textContent = pct(after);
+    $("#m-recap").textContent = `Voice drill, 2:41. ${CALL.says[k]} ${CALL.topic}: ${pct(CALL.before)} → ${pct(after)}.` + (missed.length ? `\n\nThe answer: ${missed.join(". ")}.` : "");
+  }
+  seg.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setPoints(+b.dataset.k); });
+  setPoints(2);
+
   // ---------- cards (example data) ----------
   const donut = (segs) => { let off = 25; return `<svg class="viz" viewBox="0 0 42 42" style="max-width:150px;margin:0 auto">${segs.map(([v, c]) => { const s = `<circle cx="21" cy="21" r="15.9" fill="none" stroke="${c}" stroke-width="6" stroke-dasharray="${v} ${100 - v}" stroke-dashoffset="${off}"/>`; off -= v; return s; }).join("")}<text x="21" y="22.5" text-anchor="middle" font-family="Fraunces, serif" font-size="7" fill="#1e2740">70%</text><text x="21" y="27.5" text-anchor="middle" font-size="2.6" fill="#5d6377">still ahead</text></svg>`; };
   const ring = (v, c, label) => `<svg class="viz" viewBox="0 0 42 42" style="max-width:150px;margin:0 auto"><circle cx="21" cy="21" r="15.9" fill="none" stroke="#ebe4d3" stroke-width="5"/><circle cx="21" cy="21" r="15.9" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${v} ${100 - v}" stroke-dashoffset="25"/><text x="21" y="23.5" text-anchor="middle" font-family="Fraunces, serif" font-size="8" fill="#1e2740">${label}</text></svg>`;
@@ -275,9 +337,15 @@
       return `<div class="wkx">${days.map((d) => `<b>${d}</b>`).join("")}${days.map((d) => `<div class="col">${evs.filter((e) => e[0] === d).map(([, t, hh, l, me]) => `<span class="ev${me ? " me" : ""}" style="top:${t}%;height:${hh}%">${l}</span>`).join("")}</div>`).join("")}</div>`;
     })(), "Proposed or booked, beside your real week. Booked ones open in Google Calendar."],
     ["Round", "tutor", "4 of 5 on the first try", ring(80, "#2f7a5b", "4/5"), "Every miss explained, and how each topic's mastery moved."],
-    ["Drill", "tutor", "What you said out loud", `<div class="ticks"><span class="hit">Borrowing costs more</span><span class="miss">Fewer projects pay off</span><span class="hit">Investment falls</span></div>`, "Key points you hit and missed on the call, plus the full answer."],
+    ["Drill", "tutor", "What you said out loud", `<div class="ticks"><span class="hit">Borrowing costs more</span><span class="hit">Projects get dropped</span><span class="miss">Investment falls</span></div>`, "Key points you hit and missed on the call, plus the full answer."],
   ];
-  $("#card-grid").append(...cards.map(([k, who, title, viz, sub]) => h("article", { class: "cardx" }, h("h3", {}, `${k} card: ${title.charAt(0).toLowerCase()}${title.slice(1)}`), h("div", { html: viz }), h("p", {}, sub))));
+  const LINK_ICON = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>`;
+  $("#card-grid").append(...cards.map(([k, who, title, viz, sub], i) => h("article", { class: "cardx", style: `--c:${CREW[who].color}` },
+    h("span", { class: "when" }, LINKS[i].when),
+    h("div", { class: "when-line" }, LINKS[i].line),
+    h("span", { class: "link-chip", html: `${LINK_ICON}<span>syllabus-crew-cards.vercel.app</span>` }),
+    h("h3", {}, `${k} card: ${title.charAt(0).toLowerCase()}${title.slice(1)}`), h("div", { html: viz }), h("p", {}, sub),
+    h("p", { class: "after" }, LINKS[i].after))));
 
   // ---------- trust ----------
   $("#rules").append(...RULES.map(([b, s]) => h("div", { class: "rule" }, h("b", {}, b), h("span", {}, s))));
@@ -325,7 +393,7 @@
   const tabs = $("#track-tabs"), pane = $("#track-pane");
   const showTrack = (name) => {
     $$("button", tabs).forEach((b) => b.setAttribute("aria-selected", b.textContent === name));
-    pane.replaceChildren(h("ul", {}, TRACKS[name].map((x) => h("li", {}, x))));
+    pane.replaceChildren(h("ul", {}, TRACKS[name].map((x) => Array.isArray(x) ? h("li", {}, x[0] ? h("b", { class: "lead-in" }, `${x[0]}: `) : null, x[1]) : h("li", {}, x))));
     pane.style.animation = "none"; void pane.offsetWidth; pane.style.animation = "";
   };
   Object.keys(TRACKS).forEach((name) => tabs.append(h("button", { role: "tab", onclick: () => showTrack(name) }, name)));

@@ -26,16 +26,18 @@ export function priority(weight: number, mastery: number, days: number): number 
   return weight * (1 - mastery) * (1 / Math.max(1, days));
 }
 
-export function rankTopics(state: StudentState, now: Date, tz = "America/New_York"): { topicId: string; score: number }[] {
-  const out: { topicId: string; score: number }[] = [];
+export function rankTopics(state: StudentState, now: Date, tz = "America/New_York"): { topicId: string; score: number; examId: string }[] {
+  // One entry per topic: a topic on two exams (an essay and a cumulative final) counts by whichever matters more.
+  const best = new Map<string, { topicId: string; score: number; examId: string }>();
   for (const exam of state.exams) {
     const days = daysUntil(exam.date, now, tz);
     if (days < 0) continue;
     for (const topicId of exam.topicIds) {
-      out.push({ topicId, score: priority(exam.weight, state.mastery[topicId] ?? 0.5, days) });
+      const score = priority(exam.weight, state.mastery[topicId] ?? 0.5, days);
+      if (!best.has(topicId) || best.get(topicId)!.score < score) best.set(topicId, { topicId, score, examId: exam.id });
     }
   }
-  return out.sort((a, b) => b.score - a.score);
+  return [...best.values()].sort((a, b) => b.score - a.score);
 }
 
 // ---- reply matching ----

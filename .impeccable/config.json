@@ -53,6 +53,60 @@
         ],
         "createdAt": "2026-11-15T01:11:26.116Z",
         "reason": "Claude triage: L68 is a 2px quote-style rule beside a quiz answer explanation inside a list row, not a thick accent border on a card; existing shipped design"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "apps/site/_preview/call.html"
+        ],
+        "createdAt": "2026-11-15T01:34:06.478Z",
+        "reason": "Claude triage: preview-only page (not deployed) that loads the live site's styles.css; the same exceptions are already recorded for apps/site/index.html"
+      },
+      {
+        "rule": "pulsing-dot",
+        "value": "*",
+        "files": [
+          "apps/site/_preview/call.html"
+        ],
+        "createdAt": "2026-11-15T01:34:06.493Z",
+        "reason": "Claude triage: preview-only page (not deployed) that loads the live site's styles.css; the same exceptions are already recorded for apps/site/index.html"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "apps/site/_preview/call.html"
+        ],
+        "createdAt": "2026-11-15T01:34:06.509Z",
+        "reason": "Claude triage: preview-only page (not deployed) that loads the live site's styles.css; the same exceptions are already recorded for apps/site/index.html"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "apps/site/_preview/call.html"
+        ],
+        "createdAt": "2026-11-15T01:34:06.523Z",
+        "reason": "Claude triage: preview-only page (not deployed) that loads the live site's styles.css; the same exceptions are already recorded for apps/site/index.html"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "apps/site/index.html"
+        ],
+        "createdAt": "2026-11-15T01:34:19.446Z",
+        "reason": "Claude triage: the only hit is .cphone, a phone bezel mockup whose screens fill it edge to edge by design and carry their own inner padding (12px / 16px); the tool offers no narrower value"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "apps/site/_preview/call.html"
+        ],
+        "createdAt": "2026-11-15T01:34:19.460Z",
+        "reason": "Claude triage: the only hit is .cphone, a phone bezel mockup whose screens fill it edge to edge by design and carry their own inner padding (12px / 16px); the tool offers no narrower value"
       }
     ]
   }

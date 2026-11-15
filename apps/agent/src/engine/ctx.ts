@@ -18,6 +18,8 @@ export interface Opts {
   stagedPhoto: boolean;
   /** How long to wait after the last texted page before reading, so a multi-page syllabus is read as one. */
   intakeWaitMs: number;
+  /** "Check it" sent with (often just before) a file: how long to wait for the file before answering the text. */
+  companionWaitMs?: number;
   /** The number voice drills call from, as the student will see it ("+16097854521"). */
   voiceNumber?: string;
   /** The iMessage line's number ("+1628..."), for the contact card. Unset = no card. */

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syllabus Crew · the call, and the three track words</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  /* ---------- preview chrome (not part of the site) ---------- */
+  .pv-head { padding: 48px 0 8px; }
+  .pv-head h1 { font-size: 44px; }
+  .pv-head > .wrap > p { color: var(--muted); font-size: 17px; margin-top: 10px; max-width: 72ch; }
+  .plan { margin-top: 22px; display: grid; gap: 8px; max-width: 900px; padding: 0; list-style: none; }
+  .plan li { display: flex; gap: 12px; align-items: baseline; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 11px 16px; font-size: 15.5px; }
+  .plan li b.n { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 8px; background: var(--ink); color: var(--card); font-size: 13px; }
+  .plan li small { color: var(--muted); margin-left: auto; white-space: nowrap; font-size: 13px; }
+  .pv-part { padding-top: 76px; }
+  .pv-label { display: inline-flex; gap: 10px; align-items: center; font-weight: 700; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .pv-label b { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--ink); color: var(--card); font-size: 13px; letter-spacing: 0; }
+  .pv-where { color: var(--muted); font-size: 14.5px; margin: 6px 0 22px; max-width: 80ch; }
+  .frame { border: 1px dashed #cbbf9f; border-radius: 30px; padding: 44px 40px 48px; background: color-mix(in srgb, var(--bg) 70%, #fff); }
+  @media (max-width: 700px) { .frame { padding: 28px 18px; } }
+  code { font-family: ui-monospace, monospace; font-size: .9em; }
+
+  /* ---------- 1. Personal / Interactive / Accessible ---------- */
+  .pia-head h2 { font-size: clamp(32px, 3.6vw, 48px); }
+  .pia-head p { font-size: 17.5px; color: var(--muted); margin-top: 12px; max-width: 62ch; }
+  .pia { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 32px; }
+  @media (max-width: 900px) { .pia { grid-template-columns: 1fr; } }
+  .pia-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 24px 24px 22px; display: flex; flex-direction: column; gap: 14px;
+    transition: transform .28s var(--spring), box-shadow .2s; }
+  .pia-card:hover { transform: translateY(-3px); box-shadow: 0 18px 30px -22px rgba(30, 39, 64, .55); }
+  .pia-card h3 { font-size: 30px; }
+  .pia-card h3 span { display: block; font: 600 13px var(--sans); color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+  .pia-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .pia-card li { font-size: 15.5px; line-height: 1.45; padding-left: 18px; position: relative; }
+  .pia-card li::before { content: ""; position: absolute; left: 0; top: .6em; width: 7px; height: 7px; border-radius: 50%; background: var(--c, var(--ink)); }
+  .pia-card .src { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+  .pia-card.is-call { outline: 2px solid var(--tutor); outline-offset: -1px; }
+  .pia-card .jump { align-self: flex-start; }
+
+  /* ---------- 2. The call ---------- */
+  .call-sec { display: grid; grid-template-columns: 340px 1fr; gap: 56px; align-items: start; margin-top: 8px; }
+  @media (max-width: 900px) { .call-sec { grid-template-columns: 1fr; justify-items: center; } }
+  .call-copy h2 { font-size: clamp(32px, 3.6vw, 48px); }
+  .call-copy > p { font-size: 17.5px; color: var(--muted); margin-top: 12px; max-width: 58ch; }
+  .why3 { margin-top: 22px; display: grid; gap: 10px; max-width: 620px; }
+  .why3 div { display: grid; grid-template-columns: 118px 1fr; gap: 14px; align-items: baseline; font-size: 15.5px; }
+  .why3 b { font-family: var(--display); font-weight: 500; font-size: 19px; }
+
+  .cphone { width: 320px; height: 600px; border-radius: 46px; background: var(--card); border: 10px solid var(--ink); box-shadow: 0 30px 60px -30px rgba(30, 39, 64, .6);
+    overflow: hidden; position: relative; display: flex; flex-direction: column; }
+  .cphone .island { position: absolute; top: 9px; left: 50%; translate: -50% 0; width: 92px; height: 24px; border-radius: 99px; background: var(--ink); z-index: 3; }
+  .scr { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity .45s var(--out), transform .45s var(--out); }
+  .scr[hidden] { display: flex; opacity: 0; transform: scale(.97); pointer-events: none; }
+  .thread-head { padding: 42px 0 10px; text-align: center; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
+  .thread-head b { display: block; color: var(--ink); font-size: 14px; }
+  .tmsgs { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 7px; overflow: hidden; justify-content: flex-end; }
+  .bb { max-width: 82%; padding: 8px 12px; border-radius: 18px; font-size: 13.5px; line-height: 1.35; white-space: pre-line; animation: in .35s var(--spring) both; }
+  .bb.them { background: var(--bubble); align-self: flex-start; border-bottom-left-radius: 6px; }
+  .bb.me { background: var(--me); color: #fff; align-self: flex-end; border-bottom-right-radius: 6px; }
+  @keyframes in { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+
+  .callscr { background: linear-gradient(180deg, #24304f, #1e2740 60%); color: #f6f1e4; align-items: center; }
+  .callscr .cwho { margin-top: 64px; text-align: center; }
+  .avatar { width: 84px; height: 84px; border-radius: 50%; margin: 0 auto 12px; display: grid; place-items: center; font: 500 38px var(--display); background: var(--tutor); color: #fff;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, .28); }
+  .ringing .avatar { animation: ring 1.4s ease-out infinite; }
+  @keyframes ring { to { box-shadow: 0 0 0 22px rgba(255, 255, 255, 0); } }
+  .callscr .cwho b { display: block; color: #f6f1e4; font: 500 28px var(--display); }
+  .callscr .cwho small { color: #c9c3b4; font-size: 13px; }
+  .timer { font-variant-numeric: tabular-nums; color: #c9c3b4; font-size: 14px; margin-top: 4px; }
+  .live { flex: 1; width: 100%; padding: 18px 16px 8px; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; overflow: hidden; }
+  .line { font-size: 13px; line-height: 1.4; padding: 8px 11px; border-radius: 14px; max-width: 88%; animation: in .35s var(--spring) both; }
+  .line.agent { background: rgba(255, 255, 255, .1); align-self: flex-start; }
+  .line.stu { background: rgba(47, 111, 237, .85); align-self: flex-end; }
+  .line i { display: block; font-style: normal; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; opacity: .7; margin-bottom: 2px; }
+  .endbtn { width: 62px; height: 62px; border-radius: 50%; background: #d8443a; border: 0; margin: 10px 0 30px; display: grid; place-items: center; color: #fff; }
+  .endbtn svg { rotate: 135deg; }
+
+  .call-ctl { display: flex; gap: 10px; margin-top: 18px; justify-content: center; }
+
+  .mathbox { margin-top: 30px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; max-width: 640px; }
+  .mathbox h3 { font-size: 22px; }
+  .mathbox > p { color: var(--muted); font-size: 14.5px; margin-top: 6px; }
+  .seg { display: inline-flex; background: var(--track); border-radius: 14px; padding: 4px; margin-top: 14px; gap: 2px; }
+  .seg button { border: 0; background: none; padding: 8px 14px; border-radius: 10px; font-weight: 600; font-size: 14px; color: var(--muted);
+    transition: background-color .2s, color .2s, transform .2s var(--spring); }
+  .seg button:active { transform: scale(.95); }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 0 rgba(30, 39, 64, .1); }
+  .meter { margin-top: 18px; height: 12px; border-radius: 99px; background: var(--track); position: relative; overflow: hidden; }
+  .meter .was { position: absolute; top: 0; bottom: 0; left: 0; background: #d9cfb8; border-radius: 99px; }
+  .meter .now { position: absolute; top: 0; bottom: 0; left: 0; background: var(--tutor); border-radius: 99px; transition: width .6s var(--spring); }
+  .meter-row { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--muted); margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .meter-row b { color: var(--ink); }
+  .recap { margin-top: 14px; background: var(--bubble); border-radius: 18px 18px 18px 6px; padding: 10px 14px; font-size: 14px; white-space: pre-line; max-width: 480px; }
+  .formula { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+
+  .rules-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; max-width: 680px; }
+  .rules-row span { background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; font-size: 13.5px; }
+
+  /* ---------- 3-5. before / after ---------- */
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 800px) { .ba { grid-template-columns: 1fr; } }
+  .ba > div { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 20px 22px; }
+  .ba h4 { margin: 0 0 12px; font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .ba .after { border-color: var(--good); }
+  .ba .after h4 { color: var(--good); }
+  .ba ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 15px; }
+  .feat { display: grid; gap: 8px; }
+  .feat div { display: flex; gap: 10px; align-items: baseline; font-size: 15px; padding: 9px 12px; border-radius: 12px; background: var(--bg); }
+  .feat div b { min-width: 130px; }
+  .feat div small { color: var(--muted); }
+  .feat .top { background: #f7e4dd; }
+  .tag { font-size: 11.5px; font-weight: 700; color: #fff; background: var(--tutor); border-radius: 99px; padding: 2px 8px; margin-left: 4px; }
+  .lead-in { font-weight: 700; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="pv-head"><div class="wrap">
+    <h1>The call, and the three words the Education track asks for</h1>
+    <p>Everything I'd change on the page, rendered with the page's real styles. The Education track asks for a tool that is <b>personal, interactive and accessible</b>. The Tutor's call (reply CALL, your phone rings, you explain it out loud) is the clearest proof of all three, so it gets its own spot. Every claim below is checked against the code; file names are under each card.</p>
+    <ol class="plan">
+      <li><b class="n">1</b>New section: "Personal. Interactive. Accessible." <small>right after The crew</small></li>
+      <li><b class="n">2</b>New section: "Reply CALL. Your phone rings." with a playable call <small>right after 1</small></li>
+      <li><b class="n">3</b>Tutor panel: the call moves to the top, labeled "Voice drill" <small>The crew → Tutor</small></li>
+      <li><b class="n">4</b>Education track tab: rewritten around the three words <small>For each track</small></li>
+      <li><b class="n">5</b>Hero phone: the call thread joins the replay loop, plus one line in the hero text <small>top of page</small></li>
+    </ol>
+  </div></header>
+
+  <!-- ===================== 1 ===================== -->
+  <section class="pv-part"><div class="wrap">
+    <span class="pv-label"><b>1</b>New section</span>
+    <p class="pv-where">Goes right after The crew, before the comparison table. Three cards, each with three proofs from the product. The Interactive card is outlined in the Tutor's color and links to the call below.</p>
+    <div class="frame">
+      <div class="pia-head">
+        <h2>Personal. Interactive. Accessible.</h2>
+        <p>What the Education track asks for, and where each one shows up when you text Syl.</p>
+      </div>
+      <div class="pia">
+        <article class="pia-card" style="--c: var(--lead)">
+          <h3><span>Built around you</span>Personal</h3>
+          <ul>
+            <li>Made from <b>your</b> syllabus: your exams, their weights, your topics.</li>
+            <li>It tracks mastery per topic and works on your weakest one before your next exam. The call drills that same topic.</li>
+            <li>You name it and pick its vibe. The call opens with that name: "Hey, it's Max."</li>
+          </ul>
+          <p class="src">priority.ts · voice.ts pickTopic · naming.ts</p>
+        </article>
+        <article class="pia-card is-call" style="--c: var(--tutor)">
+          <h3><span>It talks back</span>Interactive</h3>
+          <ul>
+            <li><b>Reply CALL and your phone rings.</b> You explain the idea out loud; it asks one follow-up, then explains and has you say it back.</li>
+            <li>Text quizzes give a hint after a miss, not the answer.</li>
+            <li>Every study block waits for your YES, and you can move it by text first.</li>
+          </ul>
+          <a class="btn small jump" href="#call">Hear how the call goes ↓</a>
+          <p class="src">voice-drill.md · tutor.ts · approve.ts</p>
+        </article>
+        <article class="pia-card" style="--c: var(--planner)">
+          <h3><span>Nothing to learn</span>Accessible</h3>
+          <ul>
+            <li>No app to install or account to make: it's a thread in Messages, the app already on your iPhone, and a phone call when you ask for one.</li>
+            <li>Two ways to practice: tap A, B or C, or talk it through on the phone.</li>
+            <li>What's said on the call comes back in writing: the recap text spells out anything you missed.</li>
+          </ul>
+          <p class="src">photon.ts · drills.ts drillRecap</p>
+        </article>
+      </div>
+    </div>
+  </div></section>
+
+  <!-- ===================== 2 ===================== -->
+  <section class="pv-part" id="call"><div class="wrap">
+    <span class="pv-label"><b>2</b>New section</span>
+    <p class="pv-where">The call gets its own spot. Press <b>Play the call</b>: the thread, the ring, the conversation, then the recap. Below it, a small control shows the real mastery math for how much you explained.</p>
+    <div class="frame">
+      <div class="call-sec">
+        <div>
+          <div class="cphone" id="cphone">
+            <span class="island"></span>
+            <div class="scr" id="s-thread">
+              <div class="thread-head"><b>Max</b>iMessage</div>
+              <div class="tmsgs" id="tmsgs"></div>
+            </div>
+            <div class="scr callscr" id="s-call" hidden>
+              <div class="cwho"><div class="avatar">M</div><b>Max</b><small>voice drill · Ch. 5: Rates</small><div class="timer" id="timer">calling…</div></div>
+              <div class="live" id="live"></div>
+              <button class="endbtn" aria-label="End call (demo)" tabindex="-1"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></button>
+            </div>
+          </div>
+          <div class="call-ctl"><button class="btn primary small" id="play">Play the call</button></div>
+        </div>
+
+        <div class="call-copy">
+          <h2>Reply CALL. Your phone rings.</h2>
+          <p>Tapping A, B or C shows you can recognize an answer. Explaining it out loud shows you understand it. So the Tutor can call you for three minutes on your weakest topic, listen, and text you what you missed.</p>
+          <div class="why3">
+            <div><b>Personal</b><span>Your weakest topic with an exam still ahead, in the voice of the agent you named.</span></div>
+            <div><b>Interactive</b><span>A real back-and-forth: you explain, it asks one follow-up, and you never hang up without the answer.</span></div>
+            <div><b>Accessible</b><span>You can do it walking to class, no screen needed, and the recap lands in the thread in writing.</span></div>
+          </div>
+          <div class="rules-row">
+            <span>Rings only after you reply CALL</span><span>9 AM to 8 PM</span><span>One a day</span><span>One hint, then it tells you</span><span>The score is code, not the model</span>
+          </div>
+
+          <div class="mathbox">
+            <h3>How much did you explain?</h3>
+            <p>The model checks which key points you said. The score and the new mastery are computed in code.</p>
+            <div class="seg" role="group" aria-label="Key points covered" id="seg">
+              <button aria-pressed="false" data-k="0">0 of 3</button><button aria-pressed="false" data-k="1">1 of 3</button><button aria-pressed="true" data-k="2">2 of 3</button><button aria-pressed="false" data-k="3">3 of 3</button>
+            </div>
+            <div class="meter"><span class="was" id="was"></span><span class="now" id="now"></span></div>
+            <div class="meter-row"><span>Ch. 5: Rates before: <b>35%</b></span><span>after: <b id="after">49%</b></span></div>
+            <div class="recap" id="recap"></div>
+            <p class="formula">Up: moves 45% of the way toward your score. Down: only 30%, no harsher than a wrong A/B/C answer. <code>packages/core/src/drills.ts</code></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></section>
+
+  <!-- ===================== 3 ===================== -->
+  <section class="pv-part"><div class="wrap">
+    <span class="pv-label"><b>3</b>Tutor panel in The crew</span>
+    <p class="pv-where">Same panel, same wording rules. The call moves from last to first and gets a label, so anyone clicking the Tutor sees it first.</p>
+    <div class="ba">
+      <div><h4>Now</h4><div class="feat">
+        <div><b>Quiz me</b><small>One question, a hint after a miss.</small></div>
+        <div><b>A round of five</b><small>Then a recap card with your score.</small></div>
+        <div><b>I don't know</b><small>It explains instead of making you guess.</small></div>
+        <div><b>Reply CALL</b><small>Your phone rings: explain it out loud, get a recap by text.</small></div>
+      </div></div>
+      <div class="after"><h4>After</h4><div class="feat">
+        <div class="top"><b>Reply CALL <span class="tag">Voice drill</span></b><small>Your phone rings. Explain it out loud; it listens, follows up once, and texts what you missed.</small></div>
+        <div><b>Quiz me</b><small>One question, a hint after a miss.</small></div>
+        <div><b>A round of five</b><small>Then a recap card with your score.</small></div>
+        <div><b>I don't know</b><small>It explains instead of making you guess.</small></div>
+      </div></div>
+    </div>
+  </div></section>
+
+  <!-- ===================== 4 ===================== -->
+  <section class="pv-part"><div class="wrap">
+    <span class="pv-label"><b>4</b>Education track tab</span>
+    <p class="pv-where">The tab now leads with the track's own three words, each with its proof, and the call is the Interactive line.</p>
+    <div class="ba">
+      <div><h4>Now</h4><ul>
+        <li>A Socratic hint before the answer, then the reveal after two misses.</li>
+        <li>Mastery per topic: right gains 30% of the gap, wrong keeps 70%.</li>
+        <li>Practice rounds with a recap card, and voice drills where you explain it out loud and get graded on key points.</li>
+        <li>Study time weighted by what's actually at stake on the syllabus.</li>
+      </ul></div>
+      <div class="after"><h4>After</h4><ul>
+        <li><span class="lead-in">Personal:</span> built from your syllabus and your mastery per topic; study time goes where the grade weight and your weak spots are.</li>
+        <li><span class="lead-in">Interactive:</span> reply CALL and explain it out loud on a 3-minute call; it follows up once, then makes sure you know the answer. Text quizzes give a hint before the answer.</li>
+        <li><span class="lead-in">Accessible:</span> no app or sign-up, just Messages on your iPhone and an ordinary phone call; tap or talk; the recap comes back in writing.</li>
+        <li>Grading and mastery are code: right gains 30% of the gap, a spoken explanation moves it 45% toward your score.</li>
+      </ul></div>
+    </div>
+  </div></section>
+
+  <!-- ===================== 5 ===================== -->
+  <section class="pv-part" style="padding-bottom: 100px"><div class="wrap">
+    <span class="pv-label"><b>5</b>Hero</span>
+    <p class="pv-where">Two small changes at the top. The tilted phone already replays threads; the call thread (offer → CALL → "Calling you now…") joins the loop. The hero paragraph gets one sentence.</p>
+    <div class="ba">
+      <div><h4>Now</h4><p style="font-size:15.5px">Syl is your personal agent for school. Send it your syllabus once and it takes it from there, with a crew behind it: Syl leads, four sub-agents do the work. It's our own crew, no framework, and every rule is in code.</p></div>
+      <div class="after"><h4>After</h4><p style="font-size:15.5px">Syl is your personal agent for school. Send it your syllabus once and it takes it from there, with a crew behind it: Syl leads, four sub-agents do the work. <mark>When an exam is close, reply CALL and it phones you to talk your weakest topic through.</mark> It's our own crew, no framework, and every rule is in code.</p></div>
+    </div>
+  </div></section>
+</main>
+
+<script>
+  // ---------- the call replay ----------
+  const THREAD = [
+    ["them", "Exam 2 is in 3 days and Ch. 5: Rates is at 35%. Want a 3-minute voice drill? Reply CALL."],
+    ["me", "CALL"],
+    ["them", "Calling you now from (609) 555-0142: a 3-minute drill on Ch. 5: Rates."],
+  ];
+  const CALL = [
+    ["agent", "Hey, it's Max. Quick three-minute drill on Ch. 5: Rates. In your own words, why does a rate hike cut investment?"],
+    ["stu", "Borrowing gets more expensive for companies."],
+    ["agent", "Right. So what happens to a project that was only barely worth it before?"],
+    ["stu", "It's not worth it anymore, so they drop it."],
+    ["agent", "Exactly. Nice work. I'll text you a recap."],
+  ];
+  const RECAP = "Voice drill, 2:41. You had the borrowing cost and the dropped projects. Ch. 5: Rates: 35% → 49%.\n\nThe answer: investment spending falls.";
+  const $ = (id) => document.getElementById(id);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let run = 0, tick;
+  const wait = (ms, r) => new Promise((ok, no) => setTimeout(() => (r === run ? ok() : no()), reduce ? 0 : ms));
+  const bubble = (who, t) => { const b = document.createElement("div"); b.className = `bb ${who}`; b.textContent = t; $("tmsgs").append(b); };
+  const show = (id) => { $("s-thread").hidden = id !== "s-thread"; $("s-call").hidden = id !== "s-call"; };
+  function reset() {
+    clearInterval(tick); $("tmsgs").innerHTML = ""; $("live").innerHTML = ""; $("timer").textContent = "calling…";
+    $("cphone").classList.remove("ringing"); show("s-thread");
+  }
+  async function play() {
+    const r = ++run; reset(); $("play").textContent = "Replay";
+    try {
+      for (const [w, t] of THREAD) { await wait(w === "me" ? 900 : 700, r); bubble(w, t); }
+      await wait(1300, r); show("s-call"); $("cphone").classList.add("ringing");
+      await wait(1800, r); $("cphone").classList.remove("ringing");
+      let s = 0; $("timer").textContent = "0:00";
+      tick = setInterval(() => { s += 9; $("timer").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }, 300);
+      for (const [w, t] of CALL) {
+        await wait(w === "stu" ? 1300 : 900, r);
+        const l = document.createElement("div"); l.className = `line ${w}`;
+        l.innerHTML = `<i>${w === "agent" ? "Max" : "You"}</i>`; l.append(t); $("live").append(l);
+        while ($("live").children.length > 4) $("live").firstChild.remove();
+      }
+      await wait(1500, r); clearInterval(tick); $("timer").textContent = "2:41 · ended";
+      await wait(1000, r); show("s-thread"); await wait(500, r); bubble("them", RECAP);
+    } catch { /* replaced by a newer run */ }
+  }
+  $("play").addEventListener("click", play);
+  THREAD.forEach(([w, t]) => bubble(w, t)); // a still frame before Play
+
+  // ---------- the mastery math, ported from packages/core/src/drills.ts ----------
+  const DRILL = { weight: 0.45, weightDown: 0.3 };
+  function drillMastery(m, score) {
+    const s = Math.max(0, Math.min(1, score));
+    const next = m + (s >= m ? DRILL.weight : DRILL.weightDown) * (s - m);
+    return Math.round(next * 1000) / 1000;
+  }
+  const POINTS = ["higher rates raise the cost of borrowing", "firms drop projects whose return is below the new rate", "investment spending falls"];
+  const FEEDBACK = ["Let's go over it again next time.", "Good start: you had the borrowing cost.", "You had the borrowing cost and the dropped projects.", "You covered every key point."];
+  const before = 0.35;
+  function setK(k) {
+    document.querySelectorAll("#seg button").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.k === k)));
+    const after = drillMastery(before, k / 3);
+    const pct = (v) => `${Math.round(v * 100)}%`;
+    $("was").style.width = pct(before); $("now").style.width = pct(after); $("after").textContent = pct(after);
+    const missed = POINTS.slice(k);
+    $("recap").textContent = `Voice drill, 2:41. ${FEEDBACK[k]} Ch. 5: Rates: ${pct(before)} → ${pct(after)}.` + (missed.length ? `\n\nThe answer: ${missed.join(". ")}.` : "");
+  }
+  $("seg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setK(+b.dataset.k); });
+  setK(2);
+</script>
+</body>
+</html>

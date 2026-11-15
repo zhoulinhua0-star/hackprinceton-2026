@@ -64,7 +64,7 @@
       <div class="wrap">
         <div class="sec-head">
           <h2>One syllabus in. The whole semester covered.</h2>
-          <p>Syl is your personal agent for school. Send it your syllabus once and it takes it from there, with a crew behind it: Syl leads, four sub-agents do the work. It's our own crew, no framework, and every rule is in code.</p>
+          <p>Syl is your personal agent for school. Send it your syllabus once and it takes it from there, with a crew behind it: Syl leads, four sub-agents do the work. It's our own crew, no framework, and every rule is in code. When an exam is close, reply CALL and it phones you to talk your weakest topic through.</p>
         </div>
         <div class="route" id="route">
           <div class="route-in" id="route-in" aria-live="polite">quiz me on chapter 5</div>
@@ -78,6 +78,58 @@
             <div class="stepper" id="stepper"><button id="crew-prev">← Back</button><div class="dots" id="dots"></div><button id="crew-next">Next →</button></div>
           </div>
           <div data-phone="crew"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Education track: personal, interactive, accessible ================= -->
+    <section class="band pia-sec" id="education">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Personal. Interactive. Accessible.</h2>
+          <p>What the Education track asks for, and where each one shows up when you text Syl.</p>
+        </div>
+        <div class="pia" id="pia"></div>
+      </div>
+    </section>
+
+    <!-- ================= The call: the Tutor's voice drill ================= -->
+    <section class="band call-band" id="call">
+      <div class="wrap call-sec">
+        <div class="call-phone">
+          <div class="cphone" id="cphone">
+            <span class="island" aria-hidden="true"></span>
+            <div class="scr" id="s-thread">
+              <div class="thread-head"><b id="c-name">Max</b>iMessage</div>
+              <div class="tmsgs" id="tmsgs" aria-live="polite"></div>
+            </div>
+            <div class="scr callscr" id="s-call" hidden>
+              <div class="cwho"><div class="avatar" aria-hidden="true">M</div><b>Max</b><small>voice drill · Ch. 5: Rates</small><div class="timer" id="timer">calling…</div></div>
+              <div class="live" id="live" aria-live="polite"></div>
+              <span class="endbtn" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></span>
+            </div>
+          </div>
+          <div class="call-ctl"><button class="btn primary small" id="play-call">Play the call</button></div>
+          <p class="call-ex">Example call, in the drill agent's real script</p>
+        </div>
+        <div class="call-copy">
+          <h2>Reply CALL. Your phone rings.</h2>
+          <p class="call-lede">Tapping A, B or C shows you can recognize an answer. Explaining it out loud shows you understand it. So the Tutor can call you for three minutes on your weakest topic, listen, and text you what you missed.</p>
+          <div class="why3">
+            <div><b>Personal</b><span>Your weakest topic with an exam still ahead, in the voice of the agent you named.</span></div>
+            <div><b>Interactive</b><span>A real back-and-forth: you explain, it asks one follow-up, and you never hang up without the answer.</span></div>
+            <div><b>Accessible</b><span>You can do it walking to class, no screen needed, and the recap lands in the thread in writing.</span></div>
+          </div>
+          <div class="rules-row" id="call-rules"></div>
+          <div class="mathbox">
+            <h3>How much did you explain?</h3>
+            <p>The model checks which key points you said. The score and the new mastery are computed in code.</p>
+            <div class="seg" role="group" aria-label="Key points covered" id="seg"></div>
+            <div class="meter" aria-hidden="true"><span class="was" id="m-was"></span><span class="now" id="m-now"></span></div>
+            <div class="meter-row"><span>Ch. 5: Rates before: <b>35%</b></span><span>after: <b id="m-after">49%</b></span></div>
+            <div class="recap" id="m-recap"></div>
+            <p class="formula">Up: moves 45% of the way toward your score. Down: only 30%, no harsher than a wrong A/B/C answer. <code>packages/core/src/drills.ts</code></p>
+          </div>
         </div>
       </div>
     </section>
@@ -128,10 +180,11 @@
     <section class="band desk" id="cards">
       <div class="wrap">
         <div class="sec-head">
-          <h2>The chat stays short. The detail is one tap away.</h2>
-          <p>Syl sends one line and a link. iMessage draws it as a card; tap it for the whole picture. Example data below.</p>
+          <h2>Every session ends with a link.</h2>
+          <p>The chat stays short. When something's done, Syl sends one line, then a link. iMessage draws it as a card; tap it and the whole picture opens in your browser. No app, no login. Here's every time one arrives (example data).</p>
         </div>
         <div class="cards" id="card-grid"></div>
+        <p class="cards-note">The pages are hosted on Vercel at random addresses, and none of them shows your name or phone number.</p>
       </div>
     </section>
 

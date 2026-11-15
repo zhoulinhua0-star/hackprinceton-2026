@@ -1,0 +1,8 @@
+{
+  "name": "@syllabus-crew/site",
+  "private": true,
+  "description": "Static pitch page (no build step). Deployed to Vercel as plain files.",
+  "scripts": {
+    "dev": "python3 -m http.server 4321"
+  }
+}

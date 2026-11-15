@@ -8,3 +8,9 @@ next-env.d.ts
 *.tsbuildinfo
 seed/private/
 !.env.example
+
+# design scratch (decision sketches, review captures) and the site's Vercel link
+.impeccable/sketches/
+.impeccable/review/
+.impeccable/decision-payload.json
+apps/site/.vercel

@@ -1,0 +1,417 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T23:44:20.815188+00:00",
+  "title": "Design System: Syllabus Crew",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Ink Navy",
+        "canonical": "oklch(27.7% 0.048 268)",
+        "tonalRamp": [
+          "#04091f",
+          "#1a233b",
+          "#353f5a",
+          "#525d79",
+          "#74809e",
+          "#95a1c0",
+          "#bac7e8",
+          "#e1eeff"
+        ]
+      },
+      "highlighter": {
+        "role": "secondary",
+        "displayName": "Highlighter",
+        "canonical": "oklch(90.8% 0.139 94)",
+        "tonalRamp": [
+          "#140900",
+          "#312200",
+          "#503e00",
+          "#725b00",
+          "#967e1e",
+          "#b5a157",
+          "#d8c78b",
+          "#fcefc0"
+        ]
+      },
+      "lead-teal": {
+        "role": "tertiary",
+        "displayName": "Lead Teal (Crew Lead)",
+        "canonical": "oklch(49.5% 0.067 190)",
+        "tonalRamp": [
+          "#001211",
+          "#002e2b",
+          "#004b47",
+          "#276a66",
+          "#4d8d89",
+          "#6eafaa",
+          "#94d6d1",
+          "#bffdf7"
+        ]
+      },
+      "scout-amber": {
+        "role": "tertiary",
+        "displayName": "Scout Amber (Scout)",
+        "canonical": "oklch(70.2% 0.141 66)",
+        "tonalRamp": [
+          "#1b0400",
+          "#3c1900",
+          "#603300",
+          "#864f00",
+          "#ad712b",
+          "#cb955e",
+          "#ebbe90",
+          "#ffe7c3"
+        ]
+      },
+      "tutor-brick": {
+        "role": "tertiary",
+        "displayName": "Tutor Brick (Tutor)",
+        "canonical": "oklch(59.3% 0.152 33)",
+        "tonalRamp": [
+          "#1f0000",
+          "#421107",
+          "#68291c",
+          "#914332",
+          "#ba6553",
+          "#d78b7a",
+          "#f6b5a6",
+          "#ffe0d4"
+        ]
+      },
+      "planner-periwinkle": {
+        "role": "tertiary",
+        "displayName": "Planner Periwinkle (Planner)",
+        "canonical": "oklch(60.3% 0.082 269)",
+        "tonalRamp": [
+          "#030725",
+          "#152049",
+          "#2e3c6b",
+          "#4b5b8c",
+          "#6c7eb2",
+          "#8ca0d6",
+          "#b2c6fc",
+          "#ddeeff"
+        ]
+      },
+      "nudger-sage": {
+        "role": "tertiary",
+        "displayName": "Nudger Sage (Nudger)",
+        "canonical": "oklch(65.6% 0.103 131)",
+        "tonalRamp": [
+          "#031000",
+          "#152b00",
+          "#2d490a",
+          "#486926",
+          "#6a8d4a",
+          "#8cae6e",
+          "#b5d39d",
+          "#e0f8cd"
+        ]
+      },
+      "cream-ground": {
+        "role": "neutral",
+        "displayName": "Cream Ground",
+        "canonical": "oklch(95.0% 0.017 88)",
+        "tonalRamp": [
+          "#0e0b04",
+          "#27241b",
+          "#433f36",
+          "#615d53",
+          "#848075",
+          "#a6a196",
+          "#ccc7bb",
+          "#f3eee2"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "oklch(99.1% 0.010 87)",
+        "tonalRamp": [
+          "#0d0b07",
+          "#26241f",
+          "#423f3a",
+          "#605d57",
+          "#83807a",
+          "#a4a19b",
+          "#cac7c0",
+          "#f1eee7"
+        ]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "oklch(50.2% 0.033 272)",
+        "tonalRamp": [
+          "#070a19",
+          "#1e2334",
+          "#393f51",
+          "#575d71",
+          "#797f94",
+          "#9aa1b7",
+          "#c0c7dd",
+          "#e6eeff"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(88.4% 0.026 87)",
+        "tonalRamp": [
+          "#100a01",
+          "#292315",
+          "#463f30",
+          "#645d4d",
+          "#87806f",
+          "#a8a190",
+          "#cec7b5",
+          "#f6eedb"
+        ]
+      },
+      "bubble-gray": {
+        "role": "neutral",
+        "displayName": "Bubble Gray",
+        "canonical": "oklch(93.2% 0.021 89)",
+        "tonalRamp": [
+          "#0f0b03",
+          "#282418",
+          "#443f33",
+          "#625d50",
+          "#858072",
+          "#a7a193",
+          "#cdc7b8",
+          "#f4eedf"
+        ]
+      },
+      "imessage-blue": {
+        "role": "neutral",
+        "displayName": "iMessage Blue",
+        "canonical": "oklch(57.4% 0.202 262)",
+        "tonalRamp": [
+          "#010825",
+          "#0d2249",
+          "#233e71",
+          "#3a5c9b",
+          "#5a7fc3",
+          "#80a2de",
+          "#abc8fc",
+          "#d8f0ff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The page's single h1 (Fraunces 500)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section h2s."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card and stop h3s; display numerals with lining tabular nums."
+      },
+      "body-lead": {
+        "displayName": "Body Lead",
+        "purpose": "Section intros, 46-60ch."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Buttons, features, rows."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Pins, filters, captions; sentence case."
+      },
+      "bubble": {
+        "displayName": "Bubble",
+        "purpose": "Message text in the phone."
+      }
+    },
+    "shadows": [
+      {
+        "name": "rest",
+        "value": "0 1px 0 rgba(30,39,64,.08)",
+        "purpose": "Buttons and tiles at rest."
+      },
+      {
+        "name": "ledge",
+        "value": "0 2px 0 #0d1326",
+        "purpose": "Key-cap base under a primary button; 0 4px 0 on hover, removed on press."
+      },
+      {
+        "name": "lift",
+        "value": "0 10px 18px -10px rgba(30,39,64,.5)",
+        "purpose": "Hovered buttons, tiles, cards."
+      },
+      {
+        "name": "float",
+        "value": "0 12px 22px -14px rgba(30,39,64,.6)",
+        "purpose": "Map pins."
+      },
+      {
+        "name": "phone",
+        "value": "0 30px 60px -30px rgba(30,39,64,.55)",
+        "purpose": "The phone and large sticky panels."
+      }
+    ],
+    "motion": [
+      {
+        "name": "settle",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "Things that arrive: bubbles, panes, phone entry, highlighter sweep, underline grow."
+      },
+      {
+        "name": "spring",
+        "value": "cubic-bezier(.3,1.5,.5,1)",
+        "purpose": "Things you touch: hover lift on buttons, pins, chips, cards (.25-.35s)."
+      },
+      {
+        "name": "press",
+        "value": "70ms",
+        "purpose": "Sink on press: translateY(1px) scale(.97), shadow removed."
+      },
+      {
+        "name": "bubble-pop",
+        "value": ".45s settle, translateY(8px) scale(.96) to rest",
+        "purpose": "Each new message."
+      },
+      {
+        "name": "pin-drop",
+        "value": ".7s spring, staggered .1s",
+        "purpose": "Map pins arriving on the painting."
+      },
+      {
+        "name": "blink",
+        "value": "5.5s infinite",
+        "purpose": "Crew character eyes."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile",
+        "value": "700px"
+      },
+      {
+        "name": "sim-stack",
+        "value": "900px"
+      },
+      {
+        "name": "tablet",
+        "value": "860px"
+      },
+      {
+        "name": "map-stack",
+        "value": "980px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ink key with a 2px ledge; lifts on the spring curve, sinks on press.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Ask for a seat</button>",
+      "css": ":host{--bg:#f3eee2;--card:#fffcf5;--ink:#1e2740;--muted:#5d6377;--line:#e0d8c6;--mark:#ffdf6b;--bubble:#eee8d9;--me:#2f6fed;--tabs:#dcd3bd;--spring:cubic-bezier(.3,1.5,.5,1);--out:cubic-bezier(.16,1,.3,1);font-family:Figtree,system-ui,sans-serif;color:var(--ink)} .ds-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:12px 20px;font:600 15.5px Figtree,system-ui,sans-serif;cursor:pointer;box-shadow:0 1px 0 rgba(30,39,64,.08);transition:transform .28s var(--spring),box-shadow .2s,border-color .2s} .ds-btn:hover{transform:translateY(-2px);box-shadow:0 10px 18px -10px rgba(30,39,64,.5);border-color:#c9bfa8} .ds-btn:active{transform:translateY(1px) scale(.97);box-shadow:none;transition-duration:.07s} .ds-btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px} .ds-btn-primary{background:var(--ink);color:var(--card);border-color:var(--ink);box-shadow:0 2px 0 #0d1326} .ds-btn-primary:hover{box-shadow:0 4px 0 #0d1326,0 14px 20px -12px rgba(30,39,64,.6);border-color:var(--ink)}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Paper button with hairline border; same lift and sink.",
+      "html": "<button class=\"ds-btn\">Answer it wrong</button>",
+      "css": ":host{--bg:#f3eee2;--card:#fffcf5;--ink:#1e2740;--muted:#5d6377;--line:#e0d8c6;--mark:#ffdf6b;--bubble:#eee8d9;--me:#2f6fed;--tabs:#dcd3bd;--spring:cubic-bezier(.3,1.5,.5,1);--out:cubic-bezier(.16,1,.3,1);font-family:Figtree,system-ui,sans-serif;color:var(--ink)} .ds-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:12px 20px;font:600 15.5px Figtree,system-ui,sans-serif;cursor:pointer;box-shadow:0 1px 0 rgba(30,39,64,.08);transition:transform .28s var(--spring),box-shadow .2s,border-color .2s} .ds-btn:hover{transform:translateY(-2px);box-shadow:0 10px 18px -10px rgba(30,39,64,.5);border-color:#c9bfa8} .ds-btn:active{transform:translateY(1px) scale(.97);box-shadow:none;transition-duration:.07s} .ds-btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px} "
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-filter",
+      "description": "Paper pill that inverts to ink when active.",
+      "html": "<div style=\"display:flex;gap:6px\"><button class=\"ds-chip\" aria-pressed=\"true\">All</button><button class=\"ds-chip\">AWS</button></div>",
+      "css": ":host{--bg:#f3eee2;--card:#fffcf5;--ink:#1e2740;--muted:#5d6377;--line:#e0d8c6;--mark:#ffdf6b;--bubble:#eee8d9;--me:#2f6fed;--tabs:#dcd3bd;--spring:cubic-bezier(.3,1.5,.5,1);--out:cubic-bezier(.16,1,.3,1);font-family:Figtree,system-ui,sans-serif;color:var(--ink)} .ds-chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:7px 14px;font:600 13.5px Figtree,system-ui,sans-serif;cursor:pointer;transition:transform .25s var(--spring),background-color .2s,color .2s} .ds-chip:hover{transform:translateY(-2px)} .ds-chip:active{transform:scale(.95)} .ds-chip:focus-visible{outline:2px solid var(--ink);outline-offset:3px} .ds-chip[aria-pressed=true]{background:var(--ink);color:var(--card);border-color:var(--ink)}"
+    },
+    {
+      "name": "Segmented Tabs",
+      "kind": "nav",
+      "refersTo": "tab-selected",
+      "description": "Tabs well with a raised paper pill for the selected tab.",
+      "html": "<div class=\"ds-tabs\"><button aria-selected=\"true\">Photon</button><button>AWS</button><button>Education</button></div>",
+      "css": ":host{--bg:#f3eee2;--card:#fffcf5;--ink:#1e2740;--muted:#5d6377;--line:#e0d8c6;--mark:#ffdf6b;--bubble:#eee8d9;--me:#2f6fed;--tabs:#dcd3bd;--spring:cubic-bezier(.3,1.5,.5,1);--out:cubic-bezier(.16,1,.3,1);font-family:Figtree,system-ui,sans-serif;color:var(--ink)} .ds-tabs{display:inline-flex;gap:4px;padding:5px;border-radius:26px;background:var(--tabs)} .ds-tabs button{border:0;background:transparent;color:#3a425a;border-radius:99px;padding:10px 18px;font:500 15px Figtree,system-ui,sans-serif;cursor:pointer;transition:background-color .2s,transform .25s var(--spring)} .ds-tabs button:hover{color:var(--ink);background:rgba(255,252,245,.5)} .ds-tabs button:active{transform:scale(.95)} .ds-tabs button:focus-visible{outline:2px solid var(--ink);outline-offset:3px} .ds-tabs button[aria-selected=true]{background:var(--card);color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(30,39,64,.18)}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Paper card with hairline; lifts and tilts slightly on hover.",
+      "html": "<div class=\"ds-card\"><h3>Exam 2 plan</h3><p>Example data. Ch. 5 is the weakest topic.</p></div>",
+      "css": ":host{--bg:#f3eee2;--card:#fffcf5;--ink:#1e2740;--muted:#5d6377;--line:#e0d8c6;--mark:#ffdf6b;--bubble:#eee8d9;--me:#2f6fed;--tabs:#dcd3bd;--spring:cubic-bezier(.3,1.5,.5,1);--out:cubic-bezier(.16,1,.3,1);font-family:Figtree,system-ui,sans-serif;color:var(--ink)} .ds-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px;max-width:260px;transition:transform .35s var(--spring),box-shadow .25s} .ds-card:hover{transform:translateY(-4px) rotate(-.4deg);box-shadow:0 22px 34px -26px rgba(30,39,64,.55)} .ds-card h3{margin:0;font:500 21px/1.06 Fraunces,Georgia,serif;letter-spacing:-.02em} .ds-card p{margin:12px 0 0;font-size:14px;color:var(--muted)}"
+    },
+    {
+      "name": "Map Pin",
+      "kind": "custom",
+      "refersTo": "map-pin",
+      "description": "Paper pill with a numeral in the darkened crew color; drops in, lifts, and takes a highlighter outline while playing.",
+      "html": "<button class=\"ds-pin\" style=\"--c:#d98b2b\"><span class=\"n\">2</span><b>The hall</b><span class=\"pd\">· Scout sees new slides</span></button>",
+      "css": ":host{--bg:#f3eee2;--card:#fffcf5;--ink:#1e2740;--muted:#5d6377;--line:#e0d8c6;--mark:#ffdf6b;--bubble:#eee8d9;--me:#2f6fed;--tabs:#dcd3bd;--spring:cubic-bezier(.3,1.5,.5,1);--out:cubic-bezier(.16,1,.3,1);font-family:Figtree,system-ui,sans-serif;color:var(--ink)} .ds-pin{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:5px 15px 5px 5px;font:13.5px Figtree,system-ui,sans-serif;cursor:pointer;box-shadow:0 12px 22px -14px rgba(30,39,64,.6);transition:transform .3s var(--spring),box-shadow .25s} .ds-pin .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;background:color-mix(in srgb,var(--c) 72%,#000);transition:transform .35s var(--spring)} .ds-pin .pd{color:var(--muted);font-weight:500} .ds-pin:hover{transform:translateY(-3px);box-shadow:0 18px 26px -16px rgba(30,39,64,.7)} .ds-pin:hover .n{transform:scale(1.12) rotate(-6deg)} .ds-pin:active{transform:scale(.96);transition-duration:.08s} .ds-pin:focus-visible{outline:3px solid var(--mark);outline-offset:2px}"
+    },
+    {
+      "name": "Phone with Thread",
+      "kind": "custom",
+      "refersTo": "phone",
+      "description": "Ink-framed phone; agent bubbles gray left with a crew 'who' line, student bubbles blue right; every replay is labeled as an example.",
+      "html": "<div class=\"ds-phone\"><div class=\"hd\"><b>Syl</b></div><div class=\"msgs\"><div class=\"who\"><i style=\"background:#c8553d\"></i>Tutor</div><div class=\"b out\">Quick one on Ch. 5: which shifts the demand curve? A, B or C</div><div class=\"b in\">B</div><div class=\"ex\">Example conversation, in Syl's real wording</div></div></div>",
+      "css": ":host{--bg:#f3eee2;--card:#fffcf5;--ink:#1e2740;--muted:#5d6377;--line:#e0d8c6;--mark:#ffdf6b;--bubble:#eee8d9;--me:#2f6fed;--tabs:#dcd3bd;--spring:cubic-bezier(.3,1.5,.5,1);--out:cubic-bezier(.16,1,.3,1);font-family:Figtree,system-ui,sans-serif;color:var(--ink)} .ds-phone{width:280px;border:10px solid var(--ink);border-radius:46px;background:var(--card);overflow:hidden;box-shadow:0 30px 60px -30px rgba(30,39,64,.55);transform:rotate(-2deg)} .ds-phone .hd{position:relative;text-align:center;padding:36px 0 10px;border-bottom:1px solid var(--line);font-size:12px} .ds-phone .hd::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:88px;height:22px;border-radius:99px;background:var(--ink)} .ds-phone .msgs{display:flex;flex-direction:column;gap:6px;padding:10px 12px 16px} .ds-phone .who{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);margin:6px 0 -2px 4px} .ds-phone .who i{width:7px;height:7px;border-radius:50%} .ds-phone .b{max-width:86%;padding:8px 12px;border-radius:18px;font-size:14px;line-height:1.38;animation:ds-pop .45s var(--out) backwards} .ds-phone .out{align-self:flex-start;background:var(--bubble);border-bottom-left-radius:5px} .ds-phone .in{align-self:flex-end;background:var(--me);color:#fff;border-bottom-right-radius:5px} .ds-phone .ex{font-size:11px;color:var(--muted);text-align:center;padding-top:6px} @keyframes ds-pop{from{opacity:0;transform:translateY(8px) scale(.96)}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Campus That Texts You",
+    "overview": "A watercolor campus on cream paper, written over in ink navy, with one highlighter for what matters. Five crew members (Crew Lead, Scout, Tutor, Planner, Nudger) are stationery with faces, each carrying one color that follows it everywhere: its character, its map pin, its \"who\" dot above a bubble, its selected state. The iMessage thread is the product, so a tilted, ink-framed phone is the recurring hero object.\n\nThe tone is calm and tactile: paper cards with hairline borders, soft diffuse shadows, and controls that lift when you point at them and sink when you press. Density is relaxed; bands breathe. The same tokens drive three surfaces: the dashboard (`apps/web/app/globals.css`, `crew.tsx`), the pitch page (`apps/site/styles.css`), and the tap-to-open card pages (`apps/cards/app/cards.css`). When one changes, change all three.",
+    "keyCharacteristics": [
+      "Cream ground, paper cards, ink type and ink primary buttons.",
+      "One highlighter yellow, used as a marker stroke, never as a fill for surfaces.",
+      "Five crew colors, one per specialist, used for identity only.",
+      "Fraunces for display, Figtree for everything you read or press.",
+      "Press feel: spring overshoot on hover lift, fast sink on press.",
+      "Painted places (campus, library, seminar desk) faded into the ground with masks and washes, never framed as photos."
+    ],
+    "rules": [
+      {
+        "name": "The One Color Per Crew Rule",
+        "body": "Each specialist owns its hue on every surface; never reuse a crew color for decoration or for a different agent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Marker Not Paint Rule",
+        "body": "Highlighter appears as a stroke under text (roughly the lower 35-40% of the line) or as an outline, not as a background for cards or buttons.",
+        "section": "colors"
+      },
+      {
+        "name": "The Serif Speaks Rule",
+        "body": "Fraunces is for headings, quotes, and display numerals only; anything you tap is Figtree.",
+        "section": "typography"
+      },
+      {
+        "name": "The Respond-Don't-Decorate Rule",
+        "body": "Static surfaces get a hairline, not a shadow; shadows grow only on objects that float or are being touched.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** label every example thread and example data set on the surface itself (\"Example conversation, in Syl's real wording\", \"Example data below\"); never imply a replay is live.",
+      "**Do** give each crew member its own color on every surface, darkened to 72% with black behind white numerals.",
+      "**Do** use the spring curve for hover lift and a 70ms sink for press on anything clickable.",
+      "**Do** fade paintings into the cream ground with washes and masks.",
+      "**Do** keep tokens in sync across `apps/web`, `apps/site`, and `apps/cards`."
+    ],
+    "donts": [
+      "**Don't** use the highlighter as a surface fill or a button color.",
+      "**Don't** put Fraunces on buttons, pins, or labels.",
+      "**Don't** add uppercase tracked labels above headings; headings stand on their own.",
+      "**Don't** use glyph characters (arrows, check marks) as icons; draw them as SVG.",
+      "**Don't** show live student data on the public site; it is examples only."
+    ]
+  }
+}

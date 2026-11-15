@@ -1,0 +1,32 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "fraunces",
+        "createdAt": "2026-11-14T23:42:23.963Z",
+        "reason": "brand commitment in PRODUCT.md: the user likes the dashboard world (Fraunces + Figtree) and asked for the same vibe"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-14T23:42:23.979Z",
+        "reason": "brand commitment in PRODUCT.md: same campus-watercolor cream ground as the dashboard, which the user asked to match"
+      },
+      {
+        "rule": "pulsing-dot",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-14T23:42:23.994Z",
+        "reason": "the dots are the iMessage typing indicator in the example threads: literal, domain-appropriate motion"
+      }
+    ]
+  }
+}

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Syllabus Crew · a campus that texts you first</title>
+  <meta name="description" content="Syl is a personal study agent in iMessage. It reads your syllabus, quizzes you on what's worth the most, and asks before it puts study time on your calendar.">
+  <meta property="og:title" content="Syllabus Crew · a campus that texts you first">
+  <meta property="og:description" content="A personal study agent in iMessage. Built at HackPrinceton Fall 2026.">
+  <meta property="og:image" content="/assets/og.png">
+  <meta name="theme-color" content="#f3eee2">
+  <link rel="icon" href="/assets/avatar-chill.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip" href="#stops">Skip to the tour</a>
+
+  <!-- ================= The campus (first viewport) ================= -->
+  <header class="map" id="top">
+    <nav class="top" aria-label="Main">
+      <a class="brand" href="#top"><span data-char="lead" data-size="34"></span>Syllabus Crew</a>
+      <div class="top-links">
+        <a href="#stops">The tour</a><a href="#gates">How it's built</a><a href="#tracks">Tracks</a>
+        <a class="btn primary small" href="#seat">Ask for a seat</a>
+      </div>
+    </nav>
+
+    <div class="title">
+      <h1>A campus that <em>texts you first.</em></h1>
+      <p>Syl is a study agent that lives in iMessage. It reads your syllabus, quizzes you on what's worth the most, and asks before it touches your calendar. Tap a place to watch it work.</p>
+    </div>
+
+    <div class="art" aria-label="The campus: tap a place">
+      <button class="pin" style="--px:.43;--py:.48;--d:.2s" data-play="hello" data-c="lead"><span class="n">1</span><span class="pl">The arches</span><span class="pd">you text Syl</span></button>
+      <button class="pin" style="--px:.03;--py:.45;--d:.3s" data-play="scout" data-c="scout"><span class="n">2</span><span class="pl">The hall</span><span class="pd">Scout sees new slides</span></button>
+      <button class="pin" style="--px:.42;--py:.79;--d:.4s" data-play="quiz" data-c="tutor"><span class="n">3</span><span class="pl">The quad</span><span class="pd">Tutor quizzes you</span></button>
+      <button class="pin" style="--px:.15;--py:.66;--d:.5s" data-play="propose" data-c="planner"><span class="n">4</span><span class="pl">The library</span><span class="pd">Planner asks first</span></button>
+      <button class="pin right" style="--px:.79;--py:.29;--d:.6s" data-play="night" data-c="nudger"><span class="n">5</span><span class="pl">The bell tower</span><span class="pd">never at night</span></button>
+    </div>
+    <div class="places" id="places" aria-label="Places on the campus"></div>
+    <div class="hero-phone" data-phone="hero"></div>
+    <p class="legend">Every place replays an example thread, in Syl's real wording. The live demo runs on our phone at the table.</p>
+  </header>
+
+  <main>
+    <!-- ================= The problem ================= -->
+    <section class="band why">
+      <div class="wrap why-grid">
+        <h2>The syllabus already knows what matters. Nothing acts on it.</h2>
+        <div class="why-copy">
+          <p>Every course hands you the stakes on day one: what's worth 25%, when it's due, what it covers. Then the PDF disappears into a downloads folder.</p>
+          <p>Study apps wait for you to open them. <mark>Syl texts you.</mark> One thread, an agent you named, four specialists behind it. You never install anything.</p>
+        </div>
+      </div>
+      <div class="wrap" id="interviews" hidden></div>
+    </section>
+
+    <!-- ================= The tour: five stops, one phone ================= -->
+    <section class="stops" id="stops" aria-label="The tour">
+      <div class="wrap stops-grid">
+        <div class="stops-list">
+          <div class="stops-head">
+            <h2>Walk the campus</h2>
+            <p>Five stops, one per crew member. Tap anything and the phone shows what really happens.</p>
+          </div>
+          <div id="stop-list"></div>
+        </div>
+        <aside class="stops-phone" aria-label="Example thread">
+          <div data-phone="tour"></div>
+          <p class="phone-note" id="tour-note">Tap a button on the left.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ================= The library: why this topic? (the agent's real rules, run in the browser) ================= -->
+    <section class="band library" id="why-topic">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Why this topic, today?</h2>
+          <p>Each specialist decides in code, not by asking the model. Below are the actual rules from Syl's source, running in your browser on Exam 2. Move the sliders and see who would text you, and the exact words.</p>
+        </div>
+        <div class="sim">
+          <div class="sim-panel">
+            <label class="slider"><span>Exam 2's weight</span><b id="v-w">25%</b><input type="range" id="s-w" min="1" max="50" value="25"></label>
+            <label class="slider"><span>Your mastery of Ch. 5</span><b id="v-m">35%</b><input type="range" id="s-m" min="0" max="100" value="35"></label>
+            <label class="slider"><span>Days until Exam 2</span><b id="v-d">3</b><input type="range" id="s-d" min="0" max="14" value="3"></label>
+            <div class="sim-answer">
+              <button class="btn" id="ans-right">Answer a Ch. 5 question right</button>
+              <button class="btn" id="ans-wrong">Answer it wrong</button>
+            </div>
+            <p class="sim-fine">Mastery after an answer, from the code: right adds 30% of the gap to 100%, wrong keeps 70%.</p>
+          </div>
+          <div class="decisions" aria-live="polite">
+            <article class="dec" id="dec-tutor"></article>
+            <article class="dec" id="dec-planner"></article>
+            <article class="dec" id="dec-nudger"></article>
+          </div>
+        </div>
+        <p class="sim-src">Rules from <code>packages/core/src/logic.ts</code>, <code>apps/agent/src/engine/planner.ts</code> and <code>packages/core/src/nudger.ts</code>. The live agent also checks timing before any text: quiet hours, 9 AM to 8 PM, 3 nudges a day, 4 hours apart, and nothing while another question or proposal is open. Ch. 4 is fixed at 72% for comparison; the proposed day is an example.</p>
+      </div>
+    </section>
+
+    <!-- ================= Cards ================= -->
+    <section class="band desk" id="cards">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>The chat stays short. The detail is one tap away.</h2>
+          <p>Syl sends one line and a link. iMessage draws it as a card; tap it for the whole picture. Example data below.</p>
+        </div>
+        <div class="cards" id="card-grid"></div>
+      </div>
+    </section>
+
+    <!-- ================= Trust ================= -->
+    <section class="band trust" id="trust">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Rules live in code, not in a prompt.</h2>
+          <p>An agent that texts you and touches your calendar has to be boring about safety. These are enforced by the program, and tested.</p>
+        </div>
+        <div class="rules" id="rules"></div>
+        <div class="clock">
+          <div class="clock-head"><h3>When can Syl text you?</h3><b id="clock-time">4:00 PM</b></div>
+          <input type="range" id="clock" min="0" max="47" value="32" aria-label="Time of day">
+          <div class="clock-bands" aria-hidden="true"><span style="--a:0;--b:16" class="q">quiet</span><span style="--a:16;--b:18" class="r"></span><span style="--a:18;--b:40" class="n">nudges ok</span><span style="--a:40;--b:46" class="r">no nudges</span><span style="--a:46;--b:48" class="q"></span></div>
+          <p id="clock-say" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Demo video (shown once a link exists in content.js) ================= -->
+    <section class="band video" id="video" hidden>
+      <div class="wrap">
+        <div class="sec-head"><h2>The two-minute demo</h2><p>Recorded on a real iPhone, with the real dashboard beside it.</p></div>
+        <div class="video-frame" id="video-frame"></div>
+      </div>
+    </section>
+
+    <!-- ================= Behind the gates ================= -->
+    <section class="band gates" id="gates">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Behind the gates</h2>
+          <p>One thread on the outside. Inside, a router and four specialists, each with its own rules and its own short list of tools.</p>
+        </div>
+        <div class="flow" id="flow"></div>
+      </div>
+    </section>
+
+    <section class="band photon" id="photon">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Built on Photon, around its edges</h2>
+          <p>Photon 2.0 runs the whole thread. Where the beta said no, we found another way and kept the chat clean.</p>
+        </div>
+        <div class="tried" id="tried"></div>
+      </div>
+    </section>
+
+    <section class="band tracks" id="tracks">
+      <div class="wrap">
+        <div class="sec-head"><h2>For each track</h2></div>
+        <div class="tabs" role="tablist" aria-label="Tracks" id="track-tabs"></div>
+        <div class="track-pane" id="track-pane" role="tabpanel"></div>
+      </div>
+    </section>
+
+    <section class="band originals">
+      <div class="wrap">
+        <div class="sec-head"><h2>Three things we built ourselves</h2></div>
+        <div class="orig" id="originals"></div>
+      </div>
+    </section>
+
+    <section class="band stack" id="stack">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Every service, and what it does here</h2>
+          <p id="stack-count"></p>
+        </div>
+        <div class="filters" id="stack-filters" role="toolbar" aria-label="Filter services"></div>
+        <ul class="services" id="services"></ul>
+      </div>
+    </section>
+
+    <section class="band next">
+      <div class="wrap">
+        <div class="sec-head"><h2>What's next</h2></div>
+        <ol class="next-list" id="next"></ol>
+      </div>
+    </section>
+
+    <!-- ================= Close ================= -->
+    <section class="seat" id="seat">
+      <div class="wrap seat-inner">
+        <span data-char="lead" data-size="96"></span>
+        <h2>Want Syl on your phone?</h2>
+        <p>Syl only texts people who texted it first, on a line with a seat for their number. Find us at our table:</p>
+        <ol class="seat-steps">
+          <li><b>Tell us your number.</b> We add a seat for it. It takes about five seconds.</li>
+          <li><b>Text "Hi" to the line we give you.</b> Name your agent and pick a vibe.</li>
+          <li><b>Send it a syllabus tonight.</b> It's yours for the rest of the weekend.</li>
+        </ol>
+        <a class="btn primary" href="#top">Back to the campus</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-inner">
+      <span>Syllabus Crew · built solo at HackPrinceton Fall 2026</span>
+      <a href="https://github.com/zhoulinhua0-star/hackprinceton-2026" rel="noopener">Code on GitHub</a>
+      <span>Threads on this page are examples in Syl's real wording. Scout reads a staged inbox in the demo.</span>
+    </div>
+  </footer>
+
+  <!-- Phone sheet for small screens: the tour's thread slides up from the bottom. -->
+  <div class="sheet" id="sheet" hidden>
+    <button class="sheet-close" id="sheet-close">Close</button>
+    <div data-phone="sheet"></div>
+  </div>
+
+  <script src="/content.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

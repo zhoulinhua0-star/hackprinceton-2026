@@ -107,6 +107,24 @@
         ],
         "createdAt": "2026-11-15T01:34:19.460Z",
         "reason": "Claude triage: the only hit is .cphone, a phone bezel mockup whose screens fill it edge to edge by design and carry their own inner padding (12px / 16px); the tool offers no narrower value"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "assets/readme/source/hero.html"
+        ],
+        "createdAt": "2026-11-15T09:17:44.091Z",
+        "reason": "brand commitment in PRODUCT.md/DESIGN.md: README images use the same campus-watercolor cream ground (#f3eee2) as the site and dashboard"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "assets/readme/source/demo.html"
+        ],
+        "createdAt": "2026-11-15T09:17:44.108Z",
+        "reason": "brand commitment in PRODUCT.md/DESIGN.md: README images use the same campus-watercolor cream ground (#f3eee2) as the site and dashboard"
       }
     ]
   }

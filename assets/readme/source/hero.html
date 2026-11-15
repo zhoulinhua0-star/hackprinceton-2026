@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- README hero. Render: see assets/readme/source/render.sh. 1200×720 CSS px at 2×. -->
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="fonts/local.css">
+<script src="crew.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 720px; overflow: hidden; }
+  body { position: relative; background: #f3eee2; color: #1e2740; font-family: Figtree, -apple-system, sans-serif; }
+  .art { position: absolute; inset: 0; background: url("../../../apps/site/assets/campus-commons.webp") 70% 40%/cover no-repeat; opacity: .26;
+         -webkit-mask-image: linear-gradient(90deg, transparent 8%, #000 62%); }
+  .left { position: absolute; left: 64px; top: 84px; width: 600px; }
+  .eyebrow { font-size: 16px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #2c6e6a; }
+  h1 { font-family: Fraunces, Georgia, serif; font-weight: 500; font-size: 92px; line-height: 1; letter-spacing: -.025em; margin-top: 18px; }
+  .line { font-family: Fraunces, Georgia, serif; font-weight: 500; font-size: 34px; line-height: 1.15; letter-spacing: -.015em; margin-top: 22px; }
+  .line mark { background: linear-gradient(transparent 55%, #ffdf6b 55%, #ffdf6b 92%, transparent 92%); color: inherit; padding: 0 2px; }
+  .what { font-size: 21px; line-height: 1.45; color: #3a4158; margin-top: 18px; max-width: 540px; }
+  .crew { display: flex; gap: 22px; margin-top: 34px; }
+  .crew div { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 16px; font-weight: 600; color: #5d6377; }
+  .tracks { position: absolute; left: 64px; bottom: 64px; display: flex; gap: 10px; }
+  .tracks span { font-size: 16px; font-weight: 600; padding: 8px 14px; border-radius: 99px; background: #fffcf5; border: 1px solid #e0d8c6; }
+  .phone { position: absolute; right: 70px; top: 40px; width: 392px; height: 640px; border-radius: 48px; background: #1e2740; padding: 12px;
+           box-shadow: 0 30px 60px -30px rgba(13,19,38,.45); transform: rotate(2deg); }
+  .screen { width: 100%; height: 100%; border-radius: 38px; background: #fffcf5; overflow: hidden; display: flex; flex-direction: column; }
+  .head { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 0 8px; border-bottom: 1px solid #e0d8c6; font-size: 15px; font-weight: 600; }
+  .thread { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: 8px 14px 14px; min-height: 0; overflow: hidden; }
+  .b { max-width: 86%; padding: 8px 12px; border-radius: 18px; font-size: 15px; line-height: 1.3; white-space: pre-line; }
+  .them { align-self: flex-start; background: #eee8d9; border-left: 4px solid var(--c); }
+  .me { align-self: flex-end; background: #2f6fed; color: #fff; }
+  .who { font-size: 12.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--c); margin: 2px 0 -3px 4px; }
+  .event { align-self: stretch; margin-top: 4px; display: flex; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 14px; background: #fff; border: 1px solid #e0d8c6; font-size: 15px; }
+  .event i { width: 5px; align-self: stretch; border-radius: 3px; background: #6d7fb3; }
+  .event b { display: block; font-weight: 600; }
+  .event small { color: #5d6377; font-size: 13.5px; }
+</style></head><body>
+<div class="art"></div>
+<div class="left">
+  <div class="eyebrow">HackPrinceton Fall 2026 · a study agent in iMessage</div>
+  <h1>Syllabus Crew</h1>
+  <p class="line">Study apps wait for you to open them. <mark>Syl texts you.</mark></p>
+  <p class="what">It reads your syllabus, quizzes you on your weak spots by text or phone call, and asks before it puts review time on your calendar.</p>
+  <div class="crew" id="crew"></div>
+</div>
+<div class="tracks"><span>Photon iMessage</span><span>Amazon · Best Practical AI</span><span>Education</span></div>
+<div class="phone"><div class="screen">
+  <div class="head" id="head"></div>
+  <div class="thread" id="thread"></div>
+</div></div>
+<script>
+  const names = { lead: "Syl", scout: "Scout", tutor: "Tutor", planner: "Planner", nudger: "Nudger" };
+  document.getElementById("crew").innerHTML = Object.keys(names).map((k) => `<div>${character(k, 66)}${names[k]}</div>`).join("");
+  document.getElementById("head").innerHTML = `${character("lead", 34)}<span>Syl</span>`;
+  // Real reply wording (apps/agent/src/engine), on the example ECON 201 course used across the project.
+  const T = [
+    ["tutor", "A rate hike makes borrowing…\nA) cheaper  B) more expensive  C) unchanged"],
+    ["me", "A"],
+    ["tutor", "Not quite. If the price of a loan is the interest rate, what happens to that price when rates go up?"],
+    ["planner", "Exam 2 is 25% and chapter 5 is your weak spot. Want me to add 30 minutes of review on Tuesday, Nov 17? Reply YES or NO."],
+    ["me", "YES"],
+    ["planner", "Done. Tuesday, Nov 17, 4:00 PM-4:30 PM, ch. 5 review."],
+  ];
+  let prev = "";
+  document.getElementById("thread").innerHTML = T.map(([k, t]) => {
+    const label = k !== "me" && k !== prev ? `<div class="who" style="--c:${COLORS[k]}">${names[k]}</div>` : "";
+    prev = k;
+    return `${label}<div class="b ${k === "me" ? "me" : "them"}" style="--c:${COLORS[k] ?? ""}">${t}</div>`;
+  }).join("") + `<div class="event"><i></i><div><b>Ch. 5 review</b><small>Google Calendar · Tue, Nov 17 · 4:00–4:30 PM</small></div></div>`;
+</script>
+</body></html>

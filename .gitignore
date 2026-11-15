@@ -14,3 +14,7 @@ seed/private/
 .impeccable/review/
 .impeccable/decision-payload.json
 apps/site/.vercel
+
+# personal photo working copies (only apps/site/assets/linhua.jpg ships)
+.impeccable/photos/
+apps/site/_preview/photos/

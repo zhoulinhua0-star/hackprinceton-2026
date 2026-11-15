@@ -332,7 +332,40 @@
   showTrack(Object.keys(TRACKS)[0]);
 
   // ---------- originals, stack, next ----------
-  $("#originals").append(...ORIGINALS.map(([t, s]) => h("div", {}, h("h3", {}, t), h("p", {}, s))));
+  // The comparison: Syl's column leads; each cell says yes or no in words, never a glyph.
+  const vs = $("#vs");
+  vs.append(h("div", { class: "vs-row vs-head", role: "row" }, h("span", { role: "columnheader" }), COMPARE.cols.map(([n, sub], i) =>
+    h("span", { class: `vs-col${i === 0 ? " syl" : ""}`, role: "columnheader", html: `${i === 0 ? charSvg("lead", 30) : ""}<span><b></b><small></small></span>` }))));
+  $$(".vs-head .vs-col", vs).forEach((el, i) => { $("b", el).textContent = COMPARE.cols[i][0]; $("small", el).textContent = COMPARE.cols[i][1]; });
+  COMPARE.rows.forEach(([label, ...cells]) => vs.append(h("div", { class: "vs-row", role: "row" },
+    h("span", { class: "vs-label", role: "rowheader" }, label),
+    cells.map(([text, ok], i) => h("span", { class: `vs-cell${i === 0 ? " syl" : ""}${ok ? " yes" : " no"}`, role: "cell" }, h("i", { "aria-hidden": "true" }), h("span", {}, text))))));
+  $("#vs-note").textContent = COMPARE.note;
+  $("#originals").append(...ORIGINALS.map(([t, s]) => h("li", {}, h("b", {}, t), h("span", {}, s))));
+
+  // The moving strip: each row is drawn twice so the loop is seamless; hover pauses it.
+  const chip = ([name, mark, color]) => {
+    const badge = CREW[mark] ? `<span class="mq-badge mq-char">${charSvg(mark, 26)}</span>` : `<span class="mq-badge" style="background:${color}">${mark}</span>`;
+    return h("span", { class: "mq-chip", html: `${badge}<span></span>` }, name);
+  };
+  [["#marquee-a", MARQUEE[0]], ["#marquee-b", MARQUEE[1]]].forEach(([sel, row]) => {
+    const track = $(sel);
+    const set = () => h("div", { class: "mq-set" }, row.map(chip));
+    track.append(set(), h("div", { class: "mq-set", "aria-hidden": "true" }, row.map(chip)));
+  });
+  $("#stats").append(...STATS.map(([n, s]) => h("span", {}, h("b", {}, n), ` ${s}`)));
+
+  // Who built it: a small polaroid; the whole card opens LinkedIn.
+  const IN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4v11H3zM9.5 9.75h3.8v1.5h.06c.53-1 1.83-2.06 3.77-2.06 4.03 0 4.77 2.65 4.77 6.1v5.46h-4v-4.84c0-1.16-.02-2.64-1.61-2.64-1.61 0-1.86 1.26-1.86 2.56v4.92h-4z"/></svg>`;
+  const initials = BUILDER.name.split(" ").map((w) => w[0]).join("");
+  $("#builder").append(
+    h("p", { class: "builder-k" }, "Built by"),
+    h("a", { class: "polaroid", href: BUILDER.linkedin, target: "_blank", rel: "noopener", "aria-label": `${BUILDER.name} on LinkedIn` },
+      BUILDER.photo
+        ? h("span", { class: "polaroid-pic photo" }, h("img", { src: BUILDER.photo, alt: `${BUILDER.name}, at the desk where Syllabus Crew was built`, width: "900", height: "1200", loading: "lazy" }))
+        : h("span", { class: "polaroid-pic", html: `<span class="initials">${initials}</span>${charSvg("lead", 44)}` }),
+      h("b", {}, BUILDER.name), h("small", {}, BUILDER.role),
+      h("span", { class: "polaroid-in", html: `${IN}<span>LinkedIn</span>` })));
   const cats = ["All", ...new Set(SERVICES.map((s) => s[0]))];
   const services = $("#services"), filters = $("#stack-filters");
   const showCat = (cat) => {

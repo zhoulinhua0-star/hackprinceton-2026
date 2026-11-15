@@ -213,11 +213,45 @@ window.TRACKS = {
   ],
 };
 
+// The comparison: from public descriptions as of Nov 2026 (Meta Muse launched Sep 8, 2026; Instinct is invite-only;
+// UpAhead is a syllabus-to-schedule app). Keep it fair: say what they do well, then where Syl differs.
+window.COMPARE = {
+  cols: [
+    ["Syl", "a personal agent for school"],
+    ["General agents", "Meta Muse, Instinct"],
+    ["Syllabus apps", "UpAhead"],
+  ],
+  rows: [
+    ["Where it lives", ["iMessage. Nothing to install.", 1], ["Texts, WhatsApp, an app", 1], ["An app you open", 0]],
+    ["Knows what each exam is worth", ["Reads your syllabus; weights and dates checked in code", 1], ["Not built around school", 0], ["Reads your syllabus", 1]],
+    ["Gets you ready for the exam", ["Quizzes, a hint before the answer, voice drills", 1], ["Does errands, not studying", 0], ["Organizes the work, doesn't teach it", 0]],
+    ["Texts first when it matters", ["When stakes are high and you're weak, by rules in code", 1], ["Works for you in the background", 1], ["Waits for you to check it", 0]],
+    ["Plans your study time", ["From your weak spots; books only after YES", 1], ["Books things on your behalf", 0], ["From the syllabus, not from what you know", 0]],
+    ["What it can touch", ["Your calendar, after YES. Nothing else.", 1], ["Email, messages, payments, accounts", 0], ["Your calendar", 1]],
+  ],
+  note: "Based on each product's public descriptions as of November 2026. General agents are great at errands; syllabus apps are great at organizing. Syl does the part between: knowing what you don't know yet, and acting on it.",
+};
+
+// What's ours: specific, checkable in the public repo.
 window.ORIGINALS = [
-  ["The priority score", "Grade weight × how weak you are × how soon it's due decides what you study next. Try it above."],
-  ["Questions checked twice", "Each question is written, then answered again independently before it reaches you. Unsure ones are dropped."],
-  ["The YES gate", "Only one path in the code can write to your calendar, and it only runs after your YES."],
+  ["The priority score", "Grade weight × how weak you are × 1/days left decides what you study next. Plain code, in logic.ts. Try it above."],
+  ["Questions answered twice", "Every question is written, then answered again on its own before you see it. If the two disagree or it's unsure, the question is dropped."],
+  ["The YES gate", "Exactly one path in the code writes to your calendar, and it only runs after your YES. Planner can only propose."],
+  ["Voice drills, graded in code", "Reply CALL and explain it out loud. The transcript is checked against key points; mastery moves by a formula, not a vibe."],
+  ["A Nudger with hard rules", "9 AM to 8 PM, at most 3 a day, 4 hours apart, never mid-conversation, quiet after 2 ignored. Enforced and tested."],
+  ["Our own crew, no framework", "A router and four sub-agents in our own TypeScript on Claude via Amazon Bedrock, with 234 automated tests."],
 ];
+
+// The moving strip: [name, badge letter or crew character, color]. Two rows drift in opposite directions.
+window.MARQUEE = [
+  [["Photon 2.0", "P", "#1e2740"], ["iMessage", "i", "#2f6fed"], ["Claude Sonnet 4.6", "C", "#c8553d"], ["Claude Haiku 4.5", "C", "#d98b2b"], ["Amazon Bedrock", "B", "#2c6e6a"], ["ElevenLabs Agents", "E", "#1e2740"], ["Google Calendar", "G", "#6d7fb3"], ["Photon voice number", "V", "#7a9e5a"], ["Vercel", "V", "#1e2740"], ["Vercel Blob", "B", "#5d6377"]],
+  [["The crew engine", "lead"], ["Scout", "scout"], ["Tutor", "tutor"], ["Planner", "planner"], ["Nudger", "nudger"], ["Next.js", "N", "#1e2740"], ["Node.js + TypeScript", "T", "#2f6fed"], ["Amazon DynamoDB", "D", "#6d7fb3"], ["node:test", "t", "#2f7a5b"], ["Fraunces + Figtree", "F", "#c8553d"]],
+];
+// Each stat is true and checkable in the repo.
+window.STATS = [["234", "automated tests"], ["1 + 4", "a lead and four sub-agents"], ["2", "Claude models on Amazon Bedrock"], ["0", "calendar writes without a YES"]];
+
+// Who built it.
+window.BUILDER = { name: "Linhua Zhou", role: "Built Syllabus Crew solo", linkedin: "https://www.linkedin.com/in/linhua-zhou-31948b42b/", photo: "/assets/linhua.jpg" };
 
 window.SERVICES = [
   ["Messaging", "Photon 2.0", "The iMessage thread, files, per-person seats"],

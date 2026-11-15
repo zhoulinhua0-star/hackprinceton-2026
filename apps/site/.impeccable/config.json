@@ -53,6 +53,60 @@
         ],
         "createdAt": "2026-11-15T00:26:46.438Z",
         "reason": "flagged shadows are the ink-navy phone elevation and the primary button key-cap ledge from the dashboard, recorded in DESIGN.md; offset neutral ink, not a colored halo"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "_preview/photo.html"
+        ],
+        "createdAt": "2026-11-15T00:54:45.068Z",
+        "reason": "polaroid uses the neutral ink elevation shadow from DESIGN.md; preview-only file"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-15T00:55:05.494Z",
+        "reason": "user requested the moving services strip (Nov 14, modeled on a reference page); every service is also listed statically below it, hover pauses it, reduced motion stops it"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "_preview/options.html"
+        ],
+        "createdAt": "2026-11-15T00:55:05.509Z",
+        "reason": "user requested the moving services strip (Nov 14, modeled on a reference page); every service is also listed statically below it, hover pauses it, reduced motion stops it"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "_preview/photo.html"
+        ],
+        "createdAt": "2026-11-15T00:55:05.525Z",
+        "reason": "user requested the moving services strip (Nov 14, modeled on a reference page); every service is also listed statically below it, hover pauses it, reduced motion stops it"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "_preview/photo.html"
+        ],
+        "createdAt": "2026-11-15T00:55:05.539Z",
+        "reason": "preview of the pitch page; brand-pinned cream ground (PRODUCT.md)"
+      },
+      {
+        "rule": "pulsing-dot",
+        "value": "*",
+        "files": [
+          "_preview/photo.html"
+        ],
+        "createdAt": "2026-11-15T00:55:05.554Z",
+        "reason": "shared stylesheet typing indicator; preview-only file"
       }
     ]
   }

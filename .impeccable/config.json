@@ -26,6 +26,24 @@
         ],
         "createdAt": "2026-11-14T23:32:54.697Z",
         "reason": "the dots are the iMessage typing indicator in the example thread: literal, domain-appropriate motion"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "apps/site/index.html"
+        ],
+        "createdAt": "2026-11-15T00:29:56.929Z",
+        "reason": "flagged shadows are the ink-navy phone elevation and primary-button key-cap ledge from the dashboard, recorded in DESIGN.md; offset neutral ink, not a colored halo"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "apps/site/index.html"
+        ],
+        "createdAt": "2026-11-15T00:55:05.569Z",
+        "reason": "user requested the moving services strip (Nov 14, modeled on a reference page); every service is also listed statically below it, hover pauses it, reduced motion stops it"
       }
     ]
   }

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syllabus Crew · pick your photo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  .pv { padding: 48px 0 80px; }
+  .pv h1 { font-size: 40px; }
+  .pv > .wrap > p { color: var(--muted); margin-top: 10px; max-width: 70ch; }
+  .row { display: flex; flex-wrap: wrap; gap: 48px; justify-content: center; margin-top: 46px; }
+  .opt { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .opt-tag { font-weight: 700; font-size: 15px; display: flex; gap: 10px; align-items: center; }
+  .opt-tag b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--card); }
+  .opt > small { color: var(--muted); font-size: 13.5px; max-width: 30ch; text-align: center; }
+  .polaroid-pic { overflow: hidden; }
+  .polaroid-pic img { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; display: block; }
+  .rec { font-size: 12.5px; font-weight: 700; color: #1f6046; background: #dcefe5; border-radius: 99px; padding: 3px 10px; }
+  .more { margin-top: 60px; text-align: center; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="pv"><div class="wrap">
+  <h1>Pick your photo for the "Built by" card</h1>
+  <p>Your real photos, only cropped and lightly corrected: a touch brighter and warmer, a little contrast, a little sharpening. No AI changes to your face. Hover a card to feel it. Tell me A, B or C.</p>
+  <div class="row" id="row"></div>
+  <p class="more">The moving services strip is in the real page now: <a href="/#stack">open it here</a> (the "Every service" section).</p>
+</div></main>
+<script>
+  const opts = [
+    ["A", "smile-close", "The smile", "Warmest and most approachable. Your face sits at the photo's left edge, as in the original."],
+    ["B", "smirk-close", "The close-up", "Whole face in frame, centered. Cleanest crop.", true],
+    ["C", "smirk-wide", "At the desk", "Hoodie and laptop in frame: reads as 'built this weekend'."],
+  ];
+  const IN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4v11H3zM9.5 9.75h3.8v1.5h.06c.53-1 1.83-2.06 3.77-2.06 4.03 0 4.77 2.65 4.77 6.1v5.46h-4v-4.84c0-1.16-.02-2.64-1.61-2.64-1.61 0-1.86 1.26-1.86 2.56v4.92h-4z"/></svg>';
+  document.getElementById("row").innerHTML = opts.map(([k, f, t, s, rec]) => `
+    <div class="opt"><div class="opt-tag"><b>${k}</b>${t}${rec ? ' <span class="rec">my pick</span>' : ""}</div>
+      <a class="polaroid" href="https://www.linkedin.com/in/linhua-zhou-31948b42b/" target="_blank" rel="noopener">
+        <span class="polaroid-pic"><img src="/_preview/photos/${f}.jpg" alt="Linhua Zhou"></span>
+        <b>Linhua Zhou</b><small>Built Syllabus Crew solo</small>
+        <span class="polaroid-in">${IN}<span>LinkedIn</span></span></a>
+      <small>${s}</small></div>`).join("");
+</script>
+</body>
+</html>

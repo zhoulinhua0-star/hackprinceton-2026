@@ -16,14 +16,15 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <a class="skip" href="#stops">Skip to the tour</a>
+  <a class="skip" href="#crew">Skip to the crew</a>
 
   <!-- ================= The campus (first viewport) ================= -->
   <header class="map" id="top">
     <nav class="top" aria-label="Main">
       <a class="brand" href="#top"><span data-char="lead" data-size="34"></span>Syllabus Crew</a>
       <div class="top-links">
-        <a href="#stops">The tour</a><a href="#gates">How it's built</a><a href="#tracks">Tracks</a>
+        <a href="#crew">The crew</a><a href="#gates">How it's built</a><a href="#tracks">Tracks</a>
+        <a class="gh" href="https://github.com/zhoulinhua0-star/hackprinceton-2026" rel="noopener" aria-label="Code on GitHub" title="Code on GitHub"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.26 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg></a>
         <a class="btn primary small" href="#seat">Ask for a seat</a>
       </div>
     </nav>
@@ -58,20 +59,26 @@
       <div class="wrap" id="interviews" hidden></div>
     </section>
 
-    <!-- ================= The tour: five stops, one phone ================= -->
-    <section class="stops" id="stops" aria-label="The tour">
-      <div class="wrap stops-grid">
-        <div class="stops-list">
-          <div class="stops-head">
-            <h2>Walk the campus</h2>
-            <p>Five stops, one per crew member. Tap anything and the phone shows what really happens.</p>
-          </div>
-          <div id="stop-list"></div>
+    <!-- ================= The crew: Syl leads, four sub-agents (our own code, no framework) ================= -->
+    <section class="crew" id="crew" aria-label="The crew">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>One syllabus in. The whole semester covered.</h2>
+          <p>Syl is your personal agent for school. Send it your syllabus once and it takes it from there, with a crew behind it: Syl leads, four sub-agents do the work. It's our own crew, no framework, and every rule is in code.</p>
         </div>
-        <aside class="stops-phone" aria-label="Example thread">
-          <div data-phone="tour"></div>
-          <p class="phone-note" id="tour-note">Tap a button on the left.</p>
-        </aside>
+        <div class="route" id="route">
+          <div class="route-in" id="route-in" aria-live="polite">quiz me on chapter 5</div>
+          <div class="route-lead"><span data-char="lead" data-size="64"></span><b>Syl</b><small>The crew lead. Reads every text and decides who answers.</small></div>
+          <div class="lanes" id="lanes"><svg class="wires-svg" aria-hidden="true" id="lanes-svg"></svg></div>
+        </div>
+
+        <div class="agent-pick" role="tablist" aria-label="The crew" id="agent-pick"></div>
+        <div class="panel">
+          <div><div id="agent-panel" role="tabpanel"></div>
+            <div class="stepper" id="stepper"><button id="crew-prev">← Back</button><div class="dots" id="dots"></div><button id="crew-next">Next →</button></div>
+          </div>
+          <div data-phone="crew"></div>
+        </div>
       </div>
     </section>
 
@@ -196,15 +203,15 @@
     <!-- ================= Close ================= -->
     <section class="seat" id="seat">
       <div class="wrap seat-inner">
-        <span data-char="lead" data-size="96"></span>
         <h2>Want Syl on your phone?</h2>
         <p>Syl only texts people who texted it first, on a line with a seat for their number. Find us at our table:</p>
         <ol class="seat-steps">
-          <li><b>Tell us your number.</b> We add a seat for it. It takes about five seconds.</li>
+          <li><b>Tell us your number.</b> We give it a seat. It takes about five seconds.</li>
           <li><b>Text "Hi" to the line we give you.</b> Name your agent and pick a vibe.</li>
           <li><b>Send it a syllabus tonight.</b> It's yours for the rest of the weekend.</li>
         </ol>
-        <a class="btn primary" href="#top">Back to the campus</a>
+        <div class="term" id="term"><div class="term-bar"><i></i><i></i><i></i><span>what we run at the table · step 1</span></div><button class="copy" data-copy="npm run seat -- +1 609 555 0123">Copy</button><div class="term-body" id="term-body"></div></div>
+        <a class="btn primary" href="#top" style="margin-top:14px">Back to the campus</a>
       </div>
     </section>
   </main>
@@ -216,12 +223,6 @@
       <span>Threads on this page are examples in Syl's real wording. Scout reads a staged inbox in the demo.</span>
     </div>
   </footer>
-
-  <!-- Phone sheet for small screens: the tour's thread slides up from the bottom. -->
-  <div class="sheet" id="sheet" hidden>
-    <button class="sheet-close" id="sheet-close">Close</button>
-    <div data-phone="sheet"></div>
-  </div>
 
   <script src="/content.js"></script>
   <script src="/app.js"></script>

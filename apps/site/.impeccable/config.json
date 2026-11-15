@@ -26,6 +26,33 @@
         ],
         "createdAt": "2026-11-14T23:42:23.994Z",
         "reason": "the dots are the iMessage typing indicator in the example threads: literal, domain-appropriate motion"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "_preview/options.html"
+        ],
+        "createdAt": "2026-11-15T00:15:59.009Z",
+        "reason": "preview of the same pitch page; brand-pinned cream ground from the dashboard (PRODUCT.md)"
+      },
+      {
+        "rule": "pulsing-dot",
+        "value": "*",
+        "files": [
+          "_preview/options.html"
+        ],
+        "createdAt": "2026-11-15T00:15:59.024Z",
+        "reason": "the dots are the iMessage typing indicator in example threads"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-15T00:26:46.438Z",
+        "reason": "flagged shadows are the ink-navy phone elevation and the primary button key-cap ledge from the dashboard, recorded in DESIGN.md; offset neutral ink, not a colored halo"
       }
     ]
   }

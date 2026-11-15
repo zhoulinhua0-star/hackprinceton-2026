@@ -38,7 +38,7 @@
   };
   const CARD_PREVIEW = {
     semester: ["ECON 201 · your semester", "70% of the grade still ahead", "donut"],
-    week: ["Ch. 5 review · Tue 4:00 PM", "Proposed · reply YES to book it", "week"],
+    week: ["Ch. 5 review · Tue, Nov 17", "Proposed · reply YES to book it", "week"],
     booked: ["Ch. 5 review · booked", "Open in Google Calendar", "week"],
     round: ["Round recap · 4 of 5", "Ch. 5 is up to 52%", "ring"],
     drill: ["Voice drill · Ch. 5: Rates", "2 of 3 key points", "ring"],
@@ -65,7 +65,7 @@
       if (text.startsWith("call:")) return h("div", { class: "callpill", html: `${ICON.call}<span></span>` }, text.slice(5));
       if (text.startsWith("card:")) {
         const [title, sub, art] = CARD_PREVIEW[text.slice(5)];
-        const el = h("div", { class: "att", html: `<div class="art">${miniArt[art]}</div><div class="cap"><b></b><small></small></div>` });
+        const el = h("div", { class: "att", html: `<div class="att-art">${miniArt[art]}</div><div class="cap"><b></b><small></small></div>` });
         $("b", el).textContent = title; $("small", el).textContent = sub;
         return el;
       }
@@ -109,36 +109,103 @@
   pins[0].setAttribute("aria-pressed", "true"); syncChips();
   setTimeout(() => hero.play("hello"), still ? 0 : 900);
 
-  // ---------- the tour ----------
-  const tour = makePhone($('[data-phone="tour"]'));
-  const sheetEl = $("#sheet");
-  const sheet = makePhone($('[data-phone="sheet"]'));
-  const small = () => window.matchMedia("(max-width: 980px)").matches;
-  $("#sheet-close").addEventListener("click", () => { sheetEl.hidden = true; });
-  const list = $("#stop-list");
-  for (const s of STOPS) {
-    const c = CREW[s.who].color;
-    const feats = s.features.map(([play, label, sub]) => h("button", { class: "feat", "data-play": play, style: `--c:${c}` }, label, h("small", {}, sub)));
-    const [img, fx, fy, zoom] = PLACES[s.id];
-    const heading = h("h3", { html: charSvg(s.who, 46) }, h("span", {}, `${s.place}. ${s.title}`));
-    const place = h("div", { class: "place", role: "img", "aria-label": `${s.place}, stop ${s.n}`, style: `--img:url("/assets/${img}.webp");--fx:${fx}%;--fy:${fy}%;--zoom:${zoom}%` }, h("span", { class: "place-pin" }, String(s.n)));
-    const stop = h("article", { class: "stop", id: `stop-${s.id}`, style: `--c:${c}` },
-      place, heading, h("p", {}, s.blurb), h("div", { class: "feats" }, feats),
-      h("div", { class: "wont" }, h("b", {}, `${CREW[s.who].name} won't:`), s.wont.map((w) => h("span", {}, w))));
-    if (s.id === "arches") stop.insertBefore(h("div", { class: "contact", html: `<img src="/assets/avatar-chill.png" alt="Syl's contact photo"><span><b>Its own contact card</b><small>A face per vibe, so its texts show up with a name and photo.</small></span>` }), stop.querySelector(".wont"));
-    list.append(stop);
+  // ---------- the crew: the routing line (Syl hands each text to one of four) ----------
+  const SUBS = ["scout", "tutor", "planner", "nudger"];
+  const ROUTE = {
+    scout: ["reads new slides and deadlines", "Prof. Lee posted Week 6 slides.", "new slides posted"],
+    tutor: ["questions, hints, mastery, voice drills", "Question 1 of 5 · Ch. 5…", "quiz me on chapter 5"],
+    planner: ["proposes study time; only YES books it", "Want me to add 30 minutes…?", "book me a study block"],
+    nudger: ["reminders, and when to stay quiet", "Got it. I'll remind you Sunday…", "remind me sunday"],
+  };
+  const lanesEl = $("#lanes"), wiresSvg = $("#lanes-svg"), routeIn = $("#route-in");
+  const lanes = SUBS.map((k) => {
+    const b = h("button", { class: "lane", style: `--c:${CREW[k].color}`, "data-k": k, html: `${charSvg(k, 40)}<span><b>${CREW[k].name}</b><small>${ROUTE[k][0]}</small></span><span class="say">“${ROUTE[k][1]}”</span>` });
+    lanesEl.append(b); return b;
+  });
+  const drawWires = () => {
+    const r0 = lanesEl.getBoundingClientRect();
+    wiresSvg.setAttribute("viewBox", `0 0 64 ${r0.height}`);
+    wiresSvg.innerHTML = lanes.map((l) => { const r = l.getBoundingClientRect(), y = r.top - r0.top + r.height / 2; return `<path class="wire" data-k="${l.dataset.k}" d="M0 ${r0.height / 2} C 34 ${r0.height / 2}, 30 ${y}, 64 ${y}"/>`; }).join("");
+    if (litLane) paintWires(litLane);
+  };
+  let litLane = null;
+  const paintWires = (k) => $$(".wire", wiresSvg).forEach((w) => { const on = w.dataset.k === k; w.classList.toggle("on", on); w.style.stroke = on ? CREW[w.dataset.k].color : ""; });
+  let laneAuto = 1, laneTimer = null;
+  const lightLane = (k) => {
+    litLane = k;
+    lanes.forEach((l) => l.classList.toggle("on", l.dataset.k === k));
+    paintWires(k);
+    routeIn.textContent = ROUTE[k][2];
+  };
+  const cycle = () => { clearInterval(laneTimer); if (still) return; laneTimer = setInterval(() => { laneAuto = (laneAuto + 1) % 4; lightLane(SUBS[laneAuto]); }, 2200); };
+  drawWires(); addEventListener("resize", drawWires); document.fonts?.ready.then(drawWires);
+  // Hover lights a lane (as in the preview); leaving resumes the cycle unless a lane was picked.
+  let lanePicked = false;
+  lanes.forEach((l) => l.addEventListener("mouseenter", () => { clearInterval(laneTimer); lightLane(l.dataset.k); }));
+  lanesEl.addEventListener("mouseleave", () => { if (!lanePicked) cycle(); });
+  lightLane("tutor"); cycle();
+
+  // ---------- the crew: one panel, one agent at a time ----------
+  const ORDER = ["lead", ...SUBS];
+  const stopOf = (k) => STOPS.find((s) => s.who === k);
+  const crewPhone = makePhone($('[data-phone="crew"]'));
+  const pick = $("#agent-pick"), panelEl = $("#agent-panel"), dots = $("#dots");
+  ORDER.forEach((k, j) => {
+    if (j === 1) pick.append(h("span", { class: "apk-sep", "aria-hidden": "true" }));
+    pick.append(h("button", { class: "apk", role: "tab", style: `--c:${CREW[k].color}`, "data-k": k, onclick: () => show(j, true), html: `${charSvg(k, 36)}<span>${CREW[k].name}<small>${k === "lead" ? "crew lead" : "sub-agent"}</small></span>` }));
+    dots.append(h("i"));
+  });
+  let agentIdx = 2, crewSeen = false;
+  function show(n, user) {
+    agentIdx = (n + ORDER.length) % ORDER.length;
+    const k = ORDER[agentIdx], s = stopOf(k), c = CREW[k].color;
+    $$(".apk", pick).forEach((b, j) => b.setAttribute("aria-selected", j === agentIdx));
+    $$("i", dots).forEach((d, j) => d.classList.toggle("on", j === agentIdx));
+    if (SUBS.includes(k)) { clearInterval(laneTimer); lightLane(k); } else if (user) { clearInterval(laneTimer); litLane = null; lanes.forEach((l) => l.classList.remove("on")); paintWires(null); }
+    const items = s.features.map(([play, label, sub]) => {
+      const b = h("button", { class: "fitem", style: `--c:${c}`, "aria-pressed": "false", html: `<span class="play"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="currentColor"/></svg></span><span>${label}<small>${sub}</small></span>` });
+      b.addEventListener("click", () => { $$(".fitem", panelEl).forEach((x) => x.setAttribute("aria-pressed", x === b)); crewPhone.play(play); });
+      return b;
+    });
+    const extra = k === "lead" ? h("div", { class: "contact", html: `<img src="/assets/avatar-chill.png" alt="Syl's contact photo"><span><b>Its own contact card</b><small>A face per vibe, so its texts show up with a name and photo.</small></span>` }) : null;
+    panelEl.replaceChildren(...[
+      h("h3", { class: "panel-h", html: `${charSvg(k, 44)}<span>${k === "lead" ? "Syl, the crew lead" : CREW[k].name}</span>` }),
+      h("p", { class: "panel-b" }, s.blurb),
+      h("div", { class: "flist" }, items), extra,
+      h("p", { class: "wontline", html: `<b>${CREW[k].name} won't:</b> ` }, s.wont.join(" · "))].filter(Boolean));
+    items[0].setAttribute("aria-pressed", "true");
+    if (user || crewSeen) crewPhone.play(s.features[0][0]);
   }
-  const note = $("#tour-note");
-  $$(".feat").forEach((b) => b.addEventListener("click", () => {
-    $$(".feat").forEach((x) => x.setAttribute("aria-pressed", x === b));
-    const label = b.firstChild.textContent;
-    if (small()) { sheetEl.hidden = false; sheet.play(b.dataset.play); return; }
-    note.textContent = `Playing: ${label}`;
-    tour.play(b.dataset.play, () => { note.textContent = `${label} · example`; });
-  }));
-  // Start the tour phone once it scrolls into view, so it's alive when you arrive.
-  let tourStarted = false;
-  new IntersectionObserver((es, ob) => { if (es.some((e) => e.isIntersecting) && !tourStarted) { tourStarted = true; const f = $(".feat"); f.setAttribute("aria-pressed", "true"); tour.play(f.dataset.play); note.textContent = `Playing: ${f.firstChild.textContent}`; ob.disconnect(); } }, { rootMargin: "0px 0px -45% 0px" }).observe($("#stop-list"));
+  $("#crew-prev").addEventListener("click", () => show(agentIdx - 1, true));
+  $("#crew-next").addEventListener("click", () => show(agentIdx + 1, true));
+  const toPanel = () => { const target = matchMedia("(max-width: 980px)").matches ? panelEl : pick; target.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" }); };
+  lanes.forEach((l) => l.addEventListener("click", () => { lanePicked = true; show(ORDER.indexOf(l.dataset.k), true); toPanel(); }));
+  const lead = $(".route-lead"); lead.setAttribute("role", "button"); lead.tabIndex = 0;
+  const pickLead = () => { show(0, true); toPanel(); };
+  lead.addEventListener("click", pickLead); lead.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pickLead(); } });
+  pick.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") show(agentIdx + 1, true); if (e.key === "ArrowLeft") show(agentIdx - 1, true); });
+  show(2, false);
+  // The phone starts playing once the section is on screen, so it's alive when you arrive.
+  new IntersectionObserver((es, ob) => { if (es.some((e) => e.isIntersecting)) { crewSeen = true; crewPhone.play(stopOf(ORDER[agentIdx]).features[0][0]); ob.disconnect(); } }, { rootMargin: "0px 0px -35% 0px" }).observe($("#agent-pick"));
+
+  // ---------- the seat command: types once when it scrolls into view ----------
+  const termBody = $("#term-body");
+  const TERM = [["dim", "~/hackprinceton-2026"], ["cmd", "npm run seat -- +1 609 555 0123"], ["", ""], ["", "Seat added for +1 (609) 555-0123."], ["ok", "  Tell them to text:  +1 (628) 555-0199"]];
+  async function typeTerm() {
+    for (const [k, text] of TERM) {
+      const row = h("div"); termBody.append(row);
+      if (k === "cmd") {
+        row.innerHTML = `<span class="p">$</span> <span class="t"></span><span class="caret"></span>`;
+        const t = $(".t", row);
+        if (still) t.textContent = text; else for (const ch of text) { t.textContent += ch; await sleep(38); }
+        await sleep(300); $(".caret", row).remove();
+      } else { row.className = k; row.textContent = text || " "; await sleep(150); }
+    }
+    termBody.append(h("div", { html: `<span class="p">$</span> <span class="caret"></span>` }));
+  }
+  let typed = false;
+  new IntersectionObserver((es) => { if (es[0].isIntersecting && !typed) { typed = true; typeTerm(); } }, { threshold: 0.6 }).observe($("#term"));
+  $$(".copy").forEach((b) => b.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Copied"; } catch { b.textContent = "Select it"; } setTimeout(() => (b.textContent = "Copy"), 1400); }));
 
   // ---------- why this topic: the agent's real decision rules, ported line for line ----------
   // priority(): packages/core/src/logic.ts · onMasteryChange(): apps/agent/src/engine/planner.ts (WEAK = 0.5, slot from

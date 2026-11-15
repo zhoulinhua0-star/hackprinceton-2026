@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syllabus Crew · options to pick from</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  /* ---------- preview chrome (not part of the site) ---------- */
+  .pv-head { padding: 48px 0 8px; }
+  .pv-head h1 { font-size: 44px; }
+  .pv-head p { color: var(--muted); font-size: 17px; margin-top: 10px; max-width: 70ch; }
+  .pv-part { padding-top: 72px; }
+  .pv-part > .wrap > h2 { font-size: 34px; }
+  .pv-part > .wrap > p { color: var(--muted); margin-top: 8px; max-width: 72ch; }
+  .opt { margin-top: 34px; border: 1px dashed #cbbf9f; border-radius: 30px; padding: 30px 30px 34px; background: color-mix(in srgb, var(--bg) 70%, #fff); }
+  .opt-tag { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .opt-tag b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--card); font-size: 14px; }
+  .opt-note { color: var(--muted); font-size: 14.5px; margin: 2px 0 22px; max-width: 80ch; }
+  .rec { font-size: 12.5px; font-weight: 700; color: #1f6046; background: #dcefe5; border-radius: 99px; padding: 3px 10px; }
+  code, .mono { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* ---------- D: top bar with "The crew" + GitHub ---------- */
+  .navmock { border-radius: 20px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(90deg, var(--bg), #efe5d2); }
+  .navmock .top { padding: 18px 26px; }
+  .gh { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); transition: transform .28s var(--spring), box-shadow .2s; }
+  .gh:hover { transform: translateY(-2px); box-shadow: 0 10px 18px -10px rgba(30, 39, 64, .5); }
+  .gh:active { transform: scale(.94); }
+  .gh-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-weight: 600; font-size: 14.5px; text-decoration: none; transition: transform .28s var(--spring), box-shadow .2s; }
+  .gh-pill:hover { transform: translateY(-2px); box-shadow: 0 10px 18px -10px rgba(30, 39, 64, .5); text-decoration: none; }
+  .gh-pill .mono { font-size: 12.5px; color: var(--muted); }
+
+  /* ---------- A: the terminal ---------- */
+  .term { background: #1b2238; color: #e9e4d6; border-radius: 16px; padding: 14px 16px 16px; font-size: 12.5px; line-height: 1.6; box-shadow: 0 18px 30px -22px rgba(0, 0, 0, .35); text-align: left; position: relative; min-height: 132px; }
+  .term-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .term-bar i { width: 9px; height: 9px; border-radius: 50%; background: #3a4361; }
+  .term-bar span { margin-left: 8px; font-size: 12px; color: #8790a8; }
+  .term .p { color: #ffdf6b; } .term .ok { color: #8fd1ad; } .term .dim { color: #8790a8; }
+  .caret { display: inline-block; width: 7px; height: 14px; background: #e9e4d6; vertical-align: -2px; animation: blinkc 1.05s steps(1) infinite; }
+  @keyframes blinkc { 50% { opacity: 0; } }
+  .copy { position: absolute; top: 10px; right: 10px; border: 1px solid #3a4361; background: transparent; color: #c9c3b3; border-radius: 8px; padding: 3px 9px; font-size: 12px; font-weight: 600; transition: background-color .2s, transform .2s var(--spring); }
+  .copy:hover { background: #262f4a; } .copy:active { transform: scale(.94); }
+  .strip { display: flex; align-items: center; gap: 14px; max-width: 860px; margin: 6px auto 0; background: #1b2238; color: #e9e4d6; border-radius: 14px; padding: 12px 16px; font-size: 13.5px; text-align: left; }
+  .strip .p { color: #ffdf6b; } .strip .ok { color: #8fd1ad; margin-left: auto; white-space: nowrap; }
+
+  /* ---------- B1: the routing line ---------- */
+  .route { display: grid; grid-template-columns: 170px 220px minmax(0, 1fr); align-items: center; gap: 24px; }
+  .route-in { justify-self: start; background: var(--me); color: #fff; border-radius: 18px 18px 5px 18px; padding: 10px 14px; font-size: 14.5px; max-width: 170px; transition: opacity .3s; }
+  .route-lead { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 18px 12px; border-radius: 24px; background: var(--card); border: 1px solid var(--lead); box-shadow: 0 0 0 1px var(--lead) inset; }
+  .route-lead b { font-family: var(--display); font-weight: 500; font-size: 22px; }
+  .route-lead small { color: var(--muted); font-size: 12.5px; }
+  .lanes { position: relative; display: flex; flex-direction: column; gap: 10px; padding-left: 64px; }
+  .lanes > svg { position: absolute; left: 0; top: 0; width: 64px; height: 100%; overflow: visible; }
+  .lane { display: flex; align-items: center; gap: 14px; padding: 9px 16px 9px 10px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); text-align: left; transition: transform .3s var(--spring), border-color .25s, box-shadow .25s; }
+  .lane b { font-size: 16px; } .lane small { display: block; color: var(--muted); font-size: 13px; }
+  .lane:hover, .lane.on { border-color: var(--c); box-shadow: 0 0 0 1px var(--c) inset; transform: translateX(4px); }
+  .lane .say { margin-left: auto; font-size: 12.5px; color: var(--muted); max-width: 44%; text-align: right; }
+  .wire { fill: none; stroke: #c9bfa8; stroke-width: 2; stroke-dasharray: 2 6; stroke-linecap: round; transition: stroke .3s; }
+  .wire.on { stroke-dasharray: none; stroke-width: 2.5; }
+  .crew-cap { text-align: center; margin-top: 18px; color: var(--muted); font-size: 14.5px; }
+
+  /* ---------- B2: file tree ---------- */
+  .tree2 { max-width: 780px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 20px 22px; font-size: 14.5px; }
+  .tree2 .path { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  .t-row { display: grid; grid-template-columns: 44px 34px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border: 0; background: transparent; border-radius: 12px; text-align: left; font: inherit; transition: background-color .2s; }
+  .t-row:hover, .t-row.on { background: #f6efdf; }
+  .t-row .gl { color: #b3a98f; white-space: pre; }
+  .t-row .nm { font-weight: 700; }
+  .t-row .nm small { font-weight: 400; color: var(--muted); margin-left: 8px; font-family: var(--sans); }
+  .t-row .k { font-size: 12px; color: var(--muted); }
+  .t-open { margin: 0 0 8px 96px; padding: 8px 14px; border-left: 2px solid var(--c); font-size: 13.5px; color: #3a425a; font-family: var(--sans); animation: rise .35s var(--out) both; }
+  .t-open b { color: var(--ink); }
+
+  /* ---------- B3: nested crew card ---------- */
+  .nest { border-radius: 30px; background: var(--panel); padding: 22px; }
+  .nest-top { display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-radius: 22px; background: var(--card); }
+  .nest-top b { font-family: var(--display); font-weight: 500; font-size: 24px; }
+  .nest-top small { display: block; color: var(--muted); font-size: 14px; }
+  .nest-tag { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--lead); }
+  .nest-kids { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 0; position: relative; padding-top: 26px; }
+  .nest-kids::before { content: ""; position: absolute; top: 0; left: 12.5%; right: 12.5%; height: 20px; border: 2px solid #c9bfa8; border-bottom: 0; border-radius: 14px 14px 0 0; }
+  .nest-kid { background: var(--card); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; border: 1px solid transparent; transition: transform .3s var(--spring), border-color .25s; text-align: left; }
+  .nest-kid:hover, .nest-kid.on { transform: translateY(-3px); border-color: var(--c); }
+  .nest-kid b { font-size: 17px; } .nest-kid small { color: var(--muted); font-size: 13.5px; }
+
+  /* ---------- C: one panel ---------- */
+  .agent-pick { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+  .apk { display: flex; align-items: center; gap: 10px; padding: 7px 16px 7px 7px; border-radius: 18px; border: 1px solid var(--line); background: var(--card); font-weight: 700; font-size: 15px; text-align: left; transition: transform .28s var(--spring), border-color .2s, background-color .2s; }
+  .apk small { display: block; font-weight: 500; font-size: 12px; color: var(--muted); }
+  .apk:hover { transform: translateY(-2px); } .apk:active { transform: scale(.96); }
+  .apk[aria-selected="true"] { border-color: var(--c); box-shadow: 0 0 0 1px var(--c) inset; background: #fffaf0; }
+  .apk-sep { width: 1px; background: var(--line); margin: 6px 4px; }
+  .panel { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 40px; margin-top: 22px; align-items: start; }
+  .panel-h { font-size: 28px; display: flex; align-items: center; gap: 12px; }
+  .panel-b { color: var(--muted); margin-top: 8px; font-size: 16px; max-width: 56ch; }
+  .flist { margin-top: 18px; display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .fitem { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: center; text-align: left; padding: 12px 6px; border: 0; border-bottom: 1px solid var(--line); background: transparent; font-size: 15.5px; font-weight: 600; transition: background-color .2s, padding .25s var(--out); }
+  .fitem small { display: block; font-weight: 400; color: var(--muted); font-size: 13.5px; }
+  .fitem .play { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--c); color: var(--c); transition: background-color .2s, color .2s, transform .3s var(--spring); }
+  .fitem:hover { background: #fbf6ea; padding-left: 12px; }
+  .fitem:hover .play { transform: scale(1.1); }
+  .fitem[aria-pressed="true"] .play { background: var(--c); color: #fff; }
+  .wontline { margin-top: 14px; font-size: 13.5px; color: var(--muted); }
+  .wontline b { color: var(--ink); }
+  .stepper { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+  .stepper button { border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 8px 14px; font-weight: 600; font-size: 14px; transition: transform .25s var(--spring); }
+  .stepper button:hover { transform: translateY(-2px); } .stepper button:active { transform: scale(.95); }
+  .stepper .dots { display: flex; gap: 6px; margin: 0 6px; }
+  .stepper .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--tabs); transition: background-color .3s, transform .3s var(--spring); }
+  .stepper .dots i.on { background: var(--ink); transform: scale(1.25); }
+
+  /* ---------- C3: swipe cards ---------- */
+  .c3 { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 30px; align-items: start; }
+  .swipe { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(290px, 46%); gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 4px 14px; scrollbar-width: thin; scrollbar-color: var(--tabs) transparent; }
+  .scard { scroll-snap-align: start; background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 10px; transition: border-color .25s, box-shadow .25s; }
+  .scard.on { border-color: var(--c); box-shadow: 0 0 0 1px var(--c) inset; }
+  .scard h3 { font-size: 22px; display: flex; align-items: center; gap: 10px; }
+  .scard p { color: var(--muted); font-size: 14px; }
+  .chipz { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chipz button { border: 1px solid var(--line); background: #fbf7ee; border-radius: 99px; padding: 7px 12px; font-size: 13.5px; font-weight: 600; transition: transform .25s var(--spring), background-color .2s, color .2s; }
+  .chipz button:hover { transform: translateY(-2px); }
+  .chipz button[aria-pressed="true"] { background: var(--c); color: #fff; border-color: var(--c); }
+  .phone { height: 600px; }
+  @media (max-width: 980px) { .route, .panel, .c3 { grid-template-columns: 1fr; } .nest-kids { grid-template-columns: 1fr 1fr; } .nest-kids::before { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="wrap pv-head">
+    <h1>Pick one per part</h1>
+    <p>Everything here is clickable. Tell me one per part (for example: D1, A1, B1, C1), or mix them. This page is a preview only and is not deployed.</p>
+  </div>
+
+  <section class="pv-part"><div class="wrap">
+    <h2>D · The top bar: "The crew" and a GitHub link</h2>
+    <p>"The tour" becomes <b>The crew</b>. It names what you find there (Syl and its four sub-agents). "4 sub-agents" would leave out Syl, who leads them.</p>
+    <div class="opt"><div class="opt-tag"><b>D1</b> GitHub as a quiet icon <span class="rec">my pick</span></div><p class="opt-note">Same height as the button, hairline border, lifts on hover. Calm, and every developer knows the mark.</p>
+      <div class="navmock"><nav class="top"><a class="brand" href="#"><span data-char="lead" data-size="34"></span>Syllabus Crew</a>
+        <div class="top-links"><a href="#">The crew</a><a href="#">How it's built</a><a href="#">Tracks</a>
+          <a class="gh" href="https://github.com/zhoulinhua0-star/hackprinceton-2026" aria-label="Code on GitHub"><span data-gh></span></a>
+          <a class="btn primary small" href="#">Ask for a seat</a></div></nav></div>
+    </div>
+    <div class="opt"><div class="opt-tag"><b>D2</b> GitHub as a labeled pill, with the repo name</div><p class="opt-note">A touch nerdier: the repo name in mono. More obvious for judges who want the code.</p>
+      <div class="navmock"><nav class="top"><a class="brand" href="#"><span data-char="lead" data-size="34"></span>Syllabus Crew</a>
+        <div class="top-links"><a href="#">The crew</a><a href="#">How it's built</a><a href="#">Tracks</a>
+          <a class="gh-pill" href="https://github.com/zhoulinhua0-star/hackprinceton-2026"><span data-gh></span>Code <span class="mono">/hackprinceton-2026</span></a>
+          <a class="btn primary small" href="#">Ask for a seat</a></div></nav></div>
+    </div>
+  </div></section>
+
+  <section class="pv-part"><div class="wrap">
+    <h2>A · "Want Syl on your phone?" with the real command</h2>
+    <p>This is the actual command we run at the table (<code>npm run seat</code>), with its real output format. The numbers are examples.</p>
+    <div class="opt"><div class="opt-tag"><b>A1</b> A small terminal under the steps <span class="rec">my pick</span></div><p class="opt-note">The command types itself once when you scroll to it, then the real output format appears. Labeled as step 1, so it reads as proof, not decoration. Copy works.</p>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+        <h2 style="font-size:44px">Want Syl on your phone?</h2>
+        <p style="color:var(--muted);max-width:52ch">Syl only texts people who texted it first, on a line with a seat for their number. Find us at our table:</p>
+        <ol class="seat-steps">
+          <li><b>Tell us your number.</b> We give it a seat. It takes about five seconds.</li>
+          <li><b>Text "Hi" to the line we give you.</b> Name your agent and pick a vibe.</li>
+          <li><b>Send it a syllabus tonight.</b> It's yours for the rest of the weekend.</li>
+        </ol>
+        <div class="term" id="term1" style="width:min(620px,100%);margin-top:4px"><div class="term-bar"><i></i><i></i><i></i><span>what we run at the table · step 1</span></div><button class="copy" data-copy="npm run seat -- +1 609 555 0123">Copy</button><div class="mono" id="term1-body" style="white-space:pre"></div></div>
+      </div>
+    </div>
+    <div class="opt"><div class="opt-tag"><b>A2</b> One command strip under the heading</div><p class="opt-note">A single line, like a log entry: the command on the left, the result on the right. The cards stay as they are.</p>
+      <div style="text-align:center"><h2 style="font-size:44px">Want Syl on your phone?</h2>
+        <p style="color:var(--muted);margin:12px auto 0;max-width:52ch">Syl only texts people who texted it first. At our table, this is all it takes:</p>
+        <div class="strip mono" style="margin-top:18px"><span class="p">$</span><span>npm run seat -- +1 609 555 0123</span><span class="ok">✓ seat added · text +1 (628) 555-0199</span></div>
+        <ol class="seat-steps" style="margin:18px auto 0">
+          <li><b>Tell us your number.</b> We give it a seat.</li><li><b>Text "Hi" to the line we give you.</b> Name your agent and pick a vibe.</li><li><b>Send it a syllabus tonight.</b> It's yours for the weekend.</li>
+        </ol></div>
+    </div>
+  </div></section>
+
+  <section class="pv-part"><div class="wrap">
+    <h2>B · The crew: Syl leads, four sub-agents under it</h2>
+    <p>Three ways to make the structure unmistakable without the tree with dotted lines. Each carries the same true line: <b>a personal agent for students. Send your syllabus once, and you're set for the semester. Our own crew, no framework, every rule in code.</b> Hover or click the sub-agents.</p>
+    <div class="opt"><div class="opt-tag"><b>B1</b> The routing line <span class="rec">my pick</span></div><p class="opt-note">Reads left to right like what really happens: your text reaches Syl, and Syl hands it to one of four. The lit lane shows who answers; it cycles on its own until you hover.</p>
+      <div class="route" id="b1">
+        <div class="route-in" id="b1-in">quiz me on chapter 5</div>
+        <div class="route-lead"><span data-char="lead" data-size="64"></span><b>Syl</b><small>The crew lead. Reads every text, decides who answers.</small></div>
+        <div class="lanes" id="b1-lanes"><svg aria-hidden="true" id="b1-svg"></svg></div>
+      </div>
+      <p class="crew-cap">Your personal agent: one syllabus in, the whole semester covered. Our own crew, no framework: a lead and four sub-agents, every rule in code.</p>
+    </div>
+    <div class="opt"><div class="opt-tag"><b>B2</b> The crew as a file tree</div><p class="opt-note">The subtle nerd version: the structure drawn the way code is organized. Click a line to open what that agent does and won't do.</p>
+      <div class="tree2 mono" id="b2"><div class="path">~/hackprinceton-2026/apps/agent/src/engine · our own crew, no framework</div></div>
+    </div>
+    <div class="opt"><div class="opt-tag"><b>B3</b> The crew card</div><p class="opt-note">Containment says "under": one card is the crew, Syl heads it, the four sit inside. The most literal, very clear.</p>
+      <div class="nest" id="b3">
+        <div class="nest-top"><span data-char="lead" data-size="56"></span><div><b>Syl</b><small>The crew lead. You only ever text Syl.</small></div><span class="nest-tag">Our own crew · no framework · every rule in code</span></div>
+        <div class="nest-kids" id="b3-kids"></div>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="pv-part"><div class="wrap">
+    <h2>C · See each agent work, without scrolling through five long sections</h2>
+    <p>All three keep one phone and show one agent at a time. Every feature still plays its real thread.</p>
+    <div class="opt"><div class="opt-tag"><b>C1</b> Pick an agent, one panel <span class="rec">my pick</span></div><p class="opt-note">Five agent buttons (Syl, then the four sub-agents), one panel below that fits one screen. Arrows and dots step through. Sits under B1 or B3.</p>
+      <div id="c1"></div>
+    </div>
+    <div class="opt"><div class="opt-tag"><b>C2</b> The structure is the menu</div><p class="opt-note">The routing line becomes the controls: click a lane and that agent's features open beside the phone. One section does both jobs, so the page gets shorter.</p>
+      <div id="c2"></div>
+    </div>
+    <div class="opt"><div class="opt-tag"><b>C3</b> Swipe through agent cards</div><p class="opt-note">Five cards in a sideways row (swipe on a phone, scroll sideways on a laptop), each with its features as chips; the phone plays whatever you tap.</p>
+      <div class="c3"><div class="swipe" id="c3"></div><div data-phone="c3"></div></div>
+    </div>
+  </div></section>
+  <div style="height:120px"></div>
+</main>
+<script src="/content.js"></script>
+<script src="/_preview/options.js"></script>
+</body>
+</html>

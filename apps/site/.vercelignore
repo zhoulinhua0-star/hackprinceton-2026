@@ -2,3 +2,4 @@
 package.json
 .vercel
 .env*
+_preview

@@ -112,15 +112,29 @@ test("a call that fails to start leaves no open drill; a call that never ends ti
   assert.equal((await s.store.load(ME))!.drills![0]!.status, "failed");
 });
 
-test("NO to a drill offer drops it; a quiz answer still beats CALL", async () => {
+test("NO to a drill offer drops it; 'Call me' mid-question ends the round and drills that topic (real-phone run, Nov 15)", async () => {
   const s = setup();
   await week6(s);
   await s.crew.offerDrillNow(ME);
   await s.say("no");
   assert.equal(s.last(), "No problem. Text CALL whenever you want a voice drill.");
   await s.crew.runScoutNow(ME);
-  await s.say("CALL"); // a quiz is open: not a drill
-  assert.equal(s.caller.calls.length, 0);
+  const open = (await s.store.load(ME))!;
+  const topic = open.questions.find((q) => q.id === open.pendingQuiz!.questionId)!.topicId;
+  await s.say("Call me"); // a quiz is open: before, this went to chat and the model said "I can't take calls"
+  assert.equal(s.caller.calls.length, 1);
+  const st = (await s.store.load(ME))!;
+  assert.equal(st.pendingQuiz, undefined, "the open question is dropped, not graded");
+  assert.ok(!st.askedQuestionIds.includes(open.pendingQuiz!.questionId), "so it can come back another time");
+  assert.equal(st.drills![0]!.topicId, topic, "the call drills the topic they were on");
+
+  // When the call can't happen (outside 9am-8pm), it says why and the question stays open.
+  const n = setup({ bypass: false, at: new Date("2026-11-15T21:30:00-05:00") });
+  await week6(n);
+  await n.crew.runScoutNow(ME);
+  await n.say("can you call me");
+  assert.match(n.last(), /only call between 9am and 8pm/);
+  assert.ok((await n.store.load(ME))!.pendingQuiz, "the question is still open");
 });
 
 test("core: drill math, grade checks, keyword matching, the call window and the ElevenLabs mapping", () => {

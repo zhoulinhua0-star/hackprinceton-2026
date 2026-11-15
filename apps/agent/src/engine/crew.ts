@@ -1,4 +1,4 @@
-import { dueAnswer, isDueQuestion, syllabusFacts } from "@syllabus-crew/core";
+import { canDrill, dueAnswer, isDueQuestion, syllabusFacts } from "@syllabus-crew/core";
 import { isAmbiguous, isDontKnow, isHintRequest, isUnsure, parseReply, rankTopics, daysUntil, inQuietHours, parseReminder, formatWhen } from "@syllabus-crew/core";
 import { describe, DEFAULT_AGENT_NAME, PRODUCT_NAME, isNameQuestion, parseNameAnswer, parseRename, parseVibe, parseVibeCommand, voice } from "@syllabus-crew/core";
 import { writeQuestions } from "./questions.ts";
@@ -59,6 +59,9 @@ const isQuitRequest = (t: string) => {
 };
 
 /** A short text that only makes sense next to a file: "check it", "here's my syllabus". */
+/** CALL and its plain-word versions: the only way a voice drill rings (DECISIONS #103). */
+const isCallRequest = (t: string) => /^(please )?(call|call me|call me now|can you call me|give me a call|phone me|drill me|voice drill|ok call|yes,? call|start (the |a )?(voice )?drill)( please)?\W*$/i.test(t.trim());
+
 /** "This class", "this one", "the one I sent": an answer that points at a file instead of naming the class. */
 const isPointer = (t: string) => isFileCompanion(t) || /^(it|this|that|this one|that one|(this|that|the) (class|course|one) here|(this|that) (class|course)|the (one|class|course|syllabus|pdf|file) (i )?(just )?(sent|attached|texted|uploaded)( you)?|(the )?(one|class|course) (in|on) (the|this|that) (pdf|file|syllabus|attachment))\W*$/i.test(t.trim());
 const isFileCompanion = (t: string) => /^(please )?(check|read|look at|see|open) (it|this|that|this one|the (pdf|file|attachment|syllabus))( out)?( please)?\W*$|^(here( it is|'?s (it|my syllabus|the syllabus|the pdf))|this is my syllabus|my syllabus|syllabus|attached)\W*$/i.test(t.trim());
@@ -138,9 +141,16 @@ export class Crew {
 
       // 1a-voice. CALL (or YES to a drill offer, or "drill me") starts a voice drill. Nothing rings without this.
       const callOffer = state.pendingOffer?.kind === "call" ? state.pendingOffer : undefined;
-      if (!state.pendingQuiz && !proposal && (/^(call|call me|call me now|drill me|voice drill|ok call|yes,? call|start (the )?(voice )?drill)\W*$/i.test(text) || (callOffer && reply.kind === "yes"))) {
+      const askedForCall = isCallRequest(text);
+      if (askedForCall || (!state.pendingQuiz && !proposal && callOffer && reply.kind === "yes")) {
         state.pendingOffer = undefined;
-        return startDrill(ctx, callOffer?.topicId);
+        // Asked mid-round: if the call can go ahead, the round ends and the open question is dropped ungraded (it can
+        // come back another time), and the call drills the topic they were just on. If it can't (outside hours, one
+        // already today), startDrill says why and the question stays open. A waiting proposal is left as it is.
+        const onTopic = state.pendingQuiz ? state.questions.find((q) => q.id === state.pendingQuiz!.questionId)?.topicId : undefined;
+        const canCall = !!this.deps.caller && canDrill(state, this.deps.clock.now(), this.deps.tz, bypassFor(this.deps, state.id)).ok;
+        if (canCall && (state.pendingQuiz || state.session)) { state.pendingQuiz = undefined; state.session = undefined; }
+        return startDrill(ctx, callOffer?.topicId ?? onTopic);
       }
       if (callOffer && reply.kind === "no") { state.pendingOffer = undefined; return ctx.say("No problem. Text CALL whenever you want a voice drill.", "drill"); }
 

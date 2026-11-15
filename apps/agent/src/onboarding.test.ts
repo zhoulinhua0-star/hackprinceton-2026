@@ -252,3 +252,40 @@ test("a PDF read that finishes after Week 6 was pressed does not overwrite Week 
   await s.crew.onInbound(ME, { text: "A" });
   assert.ok(s.texts().slice(-2).some((t) => /^Correct!/.test(t))); // then the offer for the rest
 });
+
+test("a syllabus sent as the answer to 'which class worries you' answers it; 'This class' is not small talk (real-phone run, Nov 15)", async () => {
+  const s = setup();
+  const llm = new FakeLLM(); llm.jsonByTask.parse_syllabus = SYLLABUS;
+  const crew = new Crew({ store: s.store, messenger: s.messenger, llm, calendar: s.calendar, clock: s.clock, tz: TZ, opts: { proposalDelayMs: 0, nextQuestionDelayMs: 0, intakeWaitMs: 60_000, companionWaitMs: 5 } });
+  const say = (text: string) => crew.onInbound(ME, { text, route: ROUTE });
+  await say("Hi"); await say("Syl"); await say("hype");
+  assert.match(s.last(), /which class worries you most/);
+  await crew.onInbound(ME, { hasImage: true, route: ROUTE, file: async () => ({ mediaType: "application/pdf", base64: "pdf-bytes" }) });
+  assert.equal(s.last(), "Got it, reading your syllabus. Give me about 20 seconds.");
+  const before = s.texts().length;
+  await say("This class");
+  await new Promise((r) => setTimeout(r, 30)); // the PDF read (no wait for a PDF) and the companion wait both finish
+  const after = s.texts().slice(before);
+  assert.ok(after.length && after.every((t) => /^Got it\. ECON 201|When did ECON 201 start/.test(t)), `only the read's own texts follow: ${JSON.stringify(after)}`);
+  assert.equal((await s.store.load(ME))!.focusCourse, "ECON 201", "the syllabus they sent is the class they meant");
+
+  // A name typed while the PDF is still being read is kept, and the reply doesn't ask for the PDF again.
+  const t = setup();
+  const crew2 = new Crew({ store: t.store, messenger: t.messenger, llm, calendar: t.calendar, clock: t.clock, tz: TZ, opts: { proposalDelayMs: 0, nextQuestionDelayMs: 0, intakeWaitMs: 60_000 } });
+  const say2 = (text: string) => crew2.onInbound(ME, { text, route: ROUTE });
+  await say2("Hi"); await say2("Syl"); await say2("hype");
+  await crew2.onInbound(ME, { hasImage: true, route: ROUTE, file: async () => ({ mediaType: "application/pdf", base64: "pdf-bytes" }) });
+  await say2("Arts and culture"); // runs before the read: the per-student queue takes it ahead of the read's install
+  assert.ok(t.texts().includes("Noted. Reading your syllabus now."), JSON.stringify(t.texts().slice(-3)));
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal((await t.store.load(ME))!.focusCourse, "Arts and culture");
+
+  // "This class" before the file (iMessage can deliver the text first): wait for the file, ask only if none comes.
+  const u = setup();
+  const crew3 = new Crew({ store: u.store, messenger: u.messenger, llm, calendar: u.calendar, clock: u.clock, tz: TZ, opts: { proposalDelayMs: 0, nextQuestionDelayMs: 0, intakeWaitMs: 60_000, companionWaitMs: 5 } });
+  const say3 = (text: string) => crew3.onInbound(ME, { text, route: ROUTE });
+  await say3("Hi"); await say3("Syl"); await say3("hype");
+  await say3("this one");
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(u.last(), "Send it over and I'll take a look. A syllabus works best as a PDF.");
+});

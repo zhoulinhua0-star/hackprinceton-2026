@@ -2,7 +2,7 @@
 // on the example ECON 201 course. Edit freely; app.js only draws what is here.
 window.SITE = {
   // Paste the demo video link when it exists (YouTube watch/share link, or a direct .mp4). Empty = the section stays hidden.
-  videoUrl: "",
+  videoUrl: "https://youtu.be/frTz_ULVTXY",
   // Interview quotes once you have them: [{ quote: "...", who: "junior, econ" }]. Empty = the section stays hidden.
   interviews: [],
 };

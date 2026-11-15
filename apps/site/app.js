@@ -444,4 +444,27 @@
   showCat("All");
   $("#stack-count").textContent = `${SERVICES.length} pieces. Everything outside the crew engine is a service we call; everything inside it is ours, and tested.`;
   $("#next").append(...NEXT.map(([b, s]) => h("li", {}, h("b", {}, b), h("span", {}, s))));
+
+  // ---------- the top bar: pinned after the campus, and it follows the section you're in ----------
+  {
+    const bar = $(".top");
+    if ($("#video").hidden) $$('a[href="#video"]', bar).forEach((a) => { a.hidden = true; }); // no demo link until there's a video
+    const pinned = bar.cloneNode(true);
+    pinned.classList.add("float");
+    pinned.setAttribute("aria-label", "Sections");
+    document.body.prepend(pinned);
+    // It slides in once the campus is mostly scrolled away, so there's never two bars on screen.
+    const hero = $("#top");
+    let ticking = false;
+    const place = () => { ticking = false; pinned.classList.toggle("show", hero.getBoundingClientRect().bottom < 140); };
+    addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(place); } }, { passive: true });
+    place();
+    // Which link each part of the page belongs to.
+    const GROUP = { crew: "crew", education: "call", call: "call", different: "different", "why-topic": "different", cards: "cards", trust: "cards",
+      video: "video", gates: "gates", photon: "gates", stack: "gates", tracks: "tracks", "whats-next": "tracks" };
+    const light = (key) => $$(".top-links > a:not(.btn):not(.gh)").forEach((a) => a.classList.toggle("on", a.getAttribute("href") === `#${key}`));
+    const spy = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) light(GROUP[e.target.id] ?? ""); }, { rootMargin: "-45% 0px -50% 0px" });
+    $$("section[id]").forEach((s) => spy.observe(s));
+    spy.observe($("#top"));
+  }
 })();

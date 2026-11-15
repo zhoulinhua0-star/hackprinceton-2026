@@ -59,6 +59,8 @@ const isQuitRequest = (t: string) => {
 };
 
 /** A short text that only makes sense next to a file: "check it", "here's my syllabus". */
+/** "This class", "this one", "the one I sent": an answer that points at a file instead of naming the class. */
+const isPointer = (t: string) => isFileCompanion(t) || /^(it|this|that|this one|that one|(this|that|the) (class|course|one) here|(this|that) (class|course)|the (one|class|course|syllabus|pdf|file) (i )?(just )?(sent|attached|texted|uploaded)( you)?|(the )?(one|class|course) (in|on) (the|this|that) (pdf|file|syllabus|attachment))\W*$/i.test(t.trim());
 const isFileCompanion = (t: string) => /^(please )?(check|read|look at|see|open) (it|this|that|this one|the (pdf|file|attachment|syllabus))( out)?( please)?\W*$|^(here( it is|'?s (it|my syllabus|the syllabus|the pdf))|this is my syllabus|my syllabus|syllabus|attached)\W*$/i.test(t.trim());
 
 const DEFAULTS: Opts = { bypassLimits: false, dashboardUrl: "http://localhost:3000", proposalDelayMs: 2000, llmTimeoutMs: 4000, llmProposals: false, sessionLength: 5, nextQuestionDelayMs: 1500, stagedPhoto: true, intakeWaitMs: 6000 };
@@ -251,9 +253,7 @@ export class Crew {
    */
   private async onCompanion(ctx: Ctx, text: string): Promise<void> {
     const { state } = ctx, id = state.id;
-    const ins = state.messages.filter((m) => m.dir === "in");
-    const now = this.deps.clock.now().getTime();
-    if (ins.slice(-4, -1).some((m) => m.text === "[photo]" && now - new Date(m.at).getTime() < 60_000)) return; // the file came first
+    if (this.fileJustCame(state)) return; // the file came first
     const wait = this.deps.opts.companionWaitMs ?? 6000;
     const t = setTimeout(() => void this.run(id, async () => {
       const c = await this.open(id, false);
@@ -263,6 +263,12 @@ export class Crew {
       await c.say("Send it over and I'll take a look. A syllabus works best as a PDF.", "clarify");
     }).catch(() => {}), wait);
     t.unref?.();
+  }
+
+  /** A file came in among the last few texts, within two minutes (it is being read, or was just read). */
+  private fileJustCame(state: StudentState): boolean {
+    const now = this.deps.clock.now().getTime();
+    return state.messages.filter((m) => m.dir === "in").slice(-4, -1).some((m) => m.text === "[photo]" && now - new Date(m.at).getTime() < 120_000);
   }
 
   // ---------- naming ----------
@@ -346,10 +352,13 @@ export class Crew {
       return true;
     }
     // The one open question. Their own words are kept; a command, a rename or a vibe change is handled normally instead.
+    // "This class" points at a file (sent just before, or about to arrive): the question stays open for the read to fill.
+    if (isPointer(text) && !state.parsed) return this.onCompanion(ctx, text).then(() => true);
     state.pendingName = undefined;
     if (isCommand || parseRename(text) || parseVibeCommand(text) || isNameQuestion(text) || !text) return false;
-    if (!passed) state.focusCourse = text.replace(/\s+/g, " ").slice(0, 60);
-    const next = state.parsed ? "I'll keep an eye on it." : `Text me ${passed ? "a" : "that"} syllabus as a PDF and I'll take it from there.`;
+    if (isPointer(text)) state.focusCourse = state.syllabus?.courseName ?? state.courses[0]?.name;
+    else if (!passed) state.focusCourse = text.replace(/\s+/g, " ").slice(0, 60);
+    const next = state.parsed ? "I'll keep an eye on it." : this.fileJustCame(state) ? "Reading your syllabus now." : `Text me ${passed ? "a" : "that"} syllabus as a PDF and I'll take it from there.`;
     await ctx.say(`${passed ? "No problem." : "Noted."} ${next}`, "naming");
     return true;
   }
@@ -411,7 +420,9 @@ export class Crew {
 
   private async onImage(ctx: Ctx, file?: FileLoader): Promise<void> {
     const { state, deps } = ctx;
-    state.pendingName = undefined; // a photo instead of a name: keep the default name and get to work
+    // A photo instead of a name: keep the default name and get to work. At the "which class worries you" step a
+    // syllabus *is* the answer, so that question stays open and the read fills it in (applySyllabus).
+    if (state.pendingName?.step !== "focus") state.pendingName = undefined;
     if (file) {
       // A PDF is always read for real, at once (it is the whole syllabus). A slow or failed download counts as a photo.
       const loaded = await Promise.race([file().catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 3000).unref?.())]);
@@ -424,6 +435,7 @@ export class Crew {
       // Staged: the stored parse for the demo syllabus photo, not Textract + the LLM.
       const p = stagedParse(deps.clock.now(), deps.tz);
       state.courses = p.courses; state.exams = p.exams; state.topics = p.topics; state.parsed = true;
+      if (state.pendingName?.step === "focus") { state.focusCourse ??= p.courses[0]?.name; state.pendingName = undefined; }
       const link = await semesterLink(ctx);
       await ctx.say(link ? p.summary : `${p.summary} Here's your semester: ${deps.opts.dashboardUrl}`, "onboarding");
       await sendLink(ctx, link);
@@ -551,7 +563,9 @@ export class Crew {
       const state = day1State(id, true);
       state.route = prev.route;
       state.messages = prev.messages;
-      state.agentName = prev.agentName; state.vibe = prev.vibe; state.cardFor = prev.cardFor; state.focusCourse = prev.focusCourse; // the name belongs to the thread, not the semester
+      state.agentName = prev.agentName; state.vibe = prev.vibe; state.cardFor = prev.cardFor; // the name belongs to the thread, not the semester
+      // Still asking "which class worries you?" when a syllabus lands: that syllabus was the answer.
+      state.focusCourse = prev.focusCourse ?? (prev.pendingName?.step === "focus" ? parsed.courseName : undefined);
       state.phase = "live"; state.parsed = true; state.syllabus = parsed; state.syllabusHash = hash;
       const ctx = makeCtx(this.deps, state);
       const { patch, missing } = refresh(state, this.deps.tz);

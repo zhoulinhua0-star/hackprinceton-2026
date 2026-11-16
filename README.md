@@ -18,7 +18,9 @@
 
 The agent is called **Syl** by default (you can rename it). Behind Syl, four specialists split the work: **Scout**, **Tutor**, **Planner** and **Nudger**.
 
-Built solo at **HackPrinceton Fall 2026** for three tracks: **Photon iMessage**, **Amazon · Best Practical AI**, and **Education**.
+> 🏆 **1st place, Photon sponsor track, HackPrinceton Fall 2026.**
+
+Built solo at **HackPrinceton Fall 2026** for three tracks: **Photon iMessage** (won 1st), **Amazon · Best Practical AI**, and **Education**.
 
 ## The demo
 
@@ -110,7 +112,7 @@ Every model call has a timeout, a fallback and an acceptance check, so a slow or
 
 ## The three tracks
 
-### Photon iMessage
+### Photon iMessage · 1st place
 
 The whole product is one iMessage thread on Photon 2.0 ([`photon.ts`](apps/agent/src/adapters/photon.ts)).
 
